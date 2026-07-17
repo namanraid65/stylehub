@@ -1,0 +1,35 @@
+{
+  "name": "stylehub",
+  "version": "0.0.1",
+  "private": true,
+  "description": "StyleHub — Multi-vendor Fashion & Lifestyle Marketplace",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rimraf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\" --ignore-path .gitignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\" --ignore-path .gitignore",
+    "dev:api": "turbo run dev --filter=@stylehub/api",
+    "dev:web": "turbo run dev --filter=@stylehub/web",
+    "dev:admin": "turbo run dev --filter=@stylehub/admin",
+    "build:api": "turbo run build --filter=@stylehub/api",
+    "build:web": "turbo run build --filter=@stylehub/web",
+    "build:admin": "turbo run build --filter=@stylehub/admin",
+    "db:seed": "turbo run db:seed --filter=@stylehub/api"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "prettier": "^3.3.2",
+    "rimraf": "^5.0.7",
+    "typescript": "^5.5.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.4.0"
+}
