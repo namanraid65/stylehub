@@ -25,13 +25,25 @@ export default function VendorRegisterPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setErrorMsg("Password must be at least 6 characters long.");
+    if (password.length < 8) {
+      setErrorMsg("Password must be at least 8 characters long.");
+      return;
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+    if (!passwordRegex.test(password)) {
+      setErrorMsg("Password must contain at least one uppercase letter, one lowercase letter, and one number.");
       return;
     }
 
     if (password !== confirmPassword) {
       setErrorMsg("Passwords do not match.");
+      return;
+    }
+
+    // Validate store description length only if provided
+    if (storeDescription && storeDescription.trim().length < 20) {
+      setErrorMsg("Store description must be at least 20 characters long.");
       return;
     }
 
@@ -48,14 +60,20 @@ export default function VendorRegisterPage() {
           name,
           email,
           password,
+          confirmPassword,
           storeName,
-          storeDescription,
+          storeDescription: storeDescription.trim() || undefined,
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
+        // Parse validation errors if present to show user friendly messages
+        if (data.errors) {
+          const firstError = Object.values(data.errors)[0] as string;
+          throw new Error(firstError || data.message || "Registration failed.");
+        }
         throw new Error(data.message || "Registration failed.");
       }
 
