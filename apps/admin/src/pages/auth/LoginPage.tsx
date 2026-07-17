@@ -31,10 +31,19 @@ const LoginPage: React.FC = () => {
 
     try {
       const { data: loginData } = await authApi.login(form);
+      const token = loginData.data.accessToken;
+      
+      // Save the token to the store first so the request interceptor can use it for the /me call
+      useAuthStore.getState().setToken(token);
+
       const { data: meData }    = await authApi.me();
-      setAuth(meData.data, loginData.data.accessToken);
+      
+      // Save the full user credentials
+      setAuth(meData.data, token);
       navigate(from, { replace: true });
     } catch (err: unknown) {
+      // Clear token on failure
+      useAuthStore.getState().clearAuth();
       const msg = (err as { response?: { data?: { message?: string } } })
         ?.response?.data?.message ?? 'Invalid email or password.';
       setError(msg);
