@@ -33,12 +33,21 @@ export default function ProductDetailClient({ product }: Props) {
   const [sizeChart,     setSizeChart]     = useState(false);
   const [activeTab, setActiveTab] = useState<"details"|"care"|"reviews"|"qa">("details");
   const [mounted,       setMounted]       = useState(false);
+  const [isHovered,     setIsHovered]     = useState(false);
+  const [zoomPos,       setZoomPos]       = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const wished = mounted ? isWished(product.id) : false;
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomPos({ x, y });
+  };
 
 
   // Unique colours
@@ -107,21 +116,34 @@ export default function ProductDetailClient({ product }: Props) {
           {/* ── LEFT: Image Gallery ─────────────────────────────────────────── */}
           <div className="space-y-4">
             {/* Main image */}
-            <div className="relative rounded-3xl overflow-hidden aspect-[3/4] bg-[var(--cream-dark)] group cursor-zoom-in" onClick={() => setLightbox(true)}>
+            <div 
+              className="relative rounded-3xl overflow-hidden aspect-[3/4] bg-[var(--cream-dark)] group cursor-zoom-in"
+              onClick={() => setLightbox(true)}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+              onMouseMove={handleMouseMove}
+            >
               <Image
                 src={product.images[selectedImg]!}
                 alt={product.name}
                 fill
                 priority
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                className={`object-cover transition-transform duration-150 ${
+                  isHovered ? "scale-[2.2]" : "scale-100"
+                }`}
+                style={{
+                  transformOrigin: isHovered ? `${zoomPos.x}% ${zoomPos.y}%` : "center center"
+                }}
               />
               {/* Zoom hint */}
-              <div className="absolute top-4 right-4 p-2 rounded-full bg-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className={`absolute top-4 right-4 p-2 rounded-full bg-white/80 backdrop-blur-sm transition-opacity duration-200 ${
+                isHovered ? "opacity-0" : "opacity-100"
+              }`}>
                 <ZoomIn className="h-4 w-4 text-[var(--charcoal)]" />
               </div>
               {/* Nav arrows */}
               {product.images.length > 1 && (
-                <>
+                <div className={`transition-opacity duration-200 ${isHovered ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
                   <button
                     className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/90 shadow-md hover:bg-white transition-colors"
                     onClick={(e) => { e.stopPropagation(); setSelectedImg((i) => (i - 1 + product.images.length) % product.images.length); }}
@@ -130,7 +152,7 @@ export default function ProductDetailClient({ product }: Props) {
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/90 shadow-md hover:bg-white transition-colors"
                     onClick={(e) => { e.stopPropagation(); setSelectedImg((i) => (i + 1) % product.images.length); }}
                   ><ChevronRight className="h-4 w-4" /></button>
-                </>
+                </div>
               )}
             </div>
 
