@@ -80,9 +80,62 @@ export default function ProductDetailClient({ product }: Props) {
     const s = v.size.toLowerCase();
     return s === "free size" || s === "onesize" || s === "fs" || s === "one size" || s === "o/s";
   });
-  const isFootwear = product.category.toLowerCase().includes("footwear") || 
-                     product.category.toLowerCase().includes("shoe") ||
+  const categoryLower = product.category.toLowerCase();
+  
+  const isFootwear = categoryLower.includes("footwear") || 
+                     categoryLower.includes("shoe") ||
                      sizesForColor.some(v => !isNaN(Number(v.size)));
+
+  const isBottomwear = categoryLower.includes("denim") || 
+                       categoryLower.includes("pants") || 
+                       categoryLower.includes("jeans") ||
+                       categoryLower.includes("bottom");
+
+  // Determine appropriate size chart
+  let sizeChartHeaders: string[] = [];
+  let sizeChartRows: string[][] = [];
+  let sizeChartNote: string = "";
+
+  if (isFootwear) {
+    sizeChartHeaders = ["UK / India", "US (Men)", "US (Women)", "EU", "Foot Length (cm)"];
+    sizeChartRows = [
+      ["6", "7", "8", "39", "24.5"],
+      ["7", "8", "9", "40", "25.4"],
+      ["8", "9", "10", "41", "26.2"],
+      ["9", "10", "11", "42", "27.1"],
+      ["10", "11", "12", "43", "27.9"],
+      ["11", "12", "13", "44", "28.8"],
+    ];
+    sizeChartNote = "Measurements refer to standard foot length. We recommend choosing your usual UK / Indian shoe size.";
+  } else if (isBottomwear) {
+    sizeChartHeaders = ["Size", "Waist (in)", "Hip (in)", "Inseam (in)", "Rise (in)"];
+    sizeChartRows = [
+      ["28", "28", "36", "30", "9.5"],
+      ["30", "30", "38", "30", "10.0"],
+      ["32", "32", "40", "32", "10.5"],
+      ["34", "34", "42", "32", "11.0"],
+      ["36", "36", "44", "32", "11.5"],
+    ];
+    sizeChartNote = "Bottomwear sizes match standard waist measurements in inches.";
+  } else {
+    // Default Upperwear / Dresses / Tops size chart
+    sizeChartHeaders = ["Size", "Bust (in)", "Waist (in)", "Hip (in)", "Length (in)"];
+    sizeChartRows = [
+      ["XS", "31-32", "25-26", "34-35", "52"],
+      ["S", "33-34", "27-28", "36-37", "53"],
+      ["M", "35-36", "29-30", "38-39", "54"],
+      ["L", "37-38", "31-32", "40-41", "55"],
+      ["XL", "39-40", "33-34", "42-43", "55"],
+    ];
+    sizeChartNote = "Measurements are in inches. If between sizes, we recommend sizing up.";
+  }
+
+  const isSelectedSizeRow = (rowSize: string) => {
+    if (!selectedSize) return false;
+    const sel = selectedSize.toLowerCase();
+    const row = rowSize.toLowerCase();
+    return sel === row || row.includes(sel) || sel.includes(row);
+  };
   const effectivePrice = selectedVariant?.price ?? product.basePrice;
   const inStock = selectedVariant ? selectedVariant.stock > 0 : false;
   const stockLevel = selectedVariant?.stock ?? 0;
@@ -499,44 +552,21 @@ export default function ProductDetailClient({ product }: Props) {
               <table className="w-full text-sm font-body">
                 <thead>
                   <tr className="border-b border-[var(--border)]">
-                    {(isFootwear
-                      ? ["UK / India", "US (Men)", "US (Women)", "EU", "Foot Length (cm)"]
-                      : ["Size", "Bust (in)", "Waist (in)", "Hip (in)", "Length (in)"]
-                    ).map((h) => (
+                    {sizeChartHeaders.map((h) => (
                       <th key={h} className="text-left py-2.5 px-3 text-xs uppercase tracking-wider text-[var(--muted)] font-semibold">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {(isFootwear
-                    ? [
-                        ["6", "7", "8", "39", "24.5"],
-                        ["7", "8", "9", "40", "25.4"],
-                        ["8", "9", "10", "41", "26.2"],
-                        ["9", "10", "11", "42", "27.1"],
-                        ["10", "11", "12", "43", "27.9"],
-                        ["11", "12", "13", "44", "28.8"],
-                      ]
-                    : [
-                        ["XS", "31-32", "25-26", "34-35", "52"],
-                        ["S", "33-34", "27-28", "36-37", "53"],
-                        ["M", "35-36", "29-30", "38-39", "54"],
-                        ["L", "37-38", "31-32", "40-41", "55"],
-                        ["XL", "39-40", "33-34", "42-43", "55"],
-                      ]
-                  ).map(([size, ...vals]) => (
-                    <tr key={size} className={`border-b border-[var(--border)] last:border-0 ${selectedSize === size ? "bg-[var(--rose)]/5" : ""}`}>
+                  {sizeChartRows.map(([size, ...vals]) => (
+                    <tr key={size} className={`border-b border-[var(--border)] last:border-0 ${isSelectedSizeRow(size) ? "bg-[var(--rose)]/5 font-medium" : ""}`}>
                       <td className="py-3 px-3 font-semibold text-[var(--charcoal)]">{size}</td>
                       {vals.map((v, i) => <td key={i} className="py-3 px-3 text-[var(--charcoal-mid)]">{v}</td>)}
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <p className="text-xs font-body text-[var(--muted)] mt-4">
-                {isFootwear
-                  ? "Measurements refer to standard foot length. We recommend choosing your usual UK / Indian shoe size."
-                  : "Measurements are in inches. If between sizes, we recommend sizing up."}
-              </p>
+              <p className="text-xs font-body text-[var(--muted)] mt-4">{sizeChartNote}</p>
             </div>
           </div>
         </div>
