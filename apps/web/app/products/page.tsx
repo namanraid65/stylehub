@@ -62,7 +62,7 @@ const mapLiveProduct = (p: any) => {
 
 async function getLiveProducts() {
   try {
-    const res = await fetch(`${API}/products?limit=50`, { cache: 'no-store' });
+    const res = await fetch(`${API}/products?limit=100`, { cache: 'no-store' });
     if (!res.ok) return null;
     const json = await res.json();
     const raw = json.data?.products || json.data || [];

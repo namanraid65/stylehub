@@ -62,7 +62,7 @@ const buildSort = (sort?: string): Record<string, 1 | -1> => {
 // ─── GET /api/products ────────────────────────────────────────────────────────
 export const getProducts = asyncHandler(async (req: Request, res: Response) => {
   const page  = Math.max(1, Number(req.query['page'] ?? 1));
-  const limit = Math.min(50, Math.max(1, Number(req.query['limit'] ?? 20)));
+  const limit = Math.min(200, Math.max(1, Number(req.query['limit'] ?? 20)));
   const skip  = (page - 1) * limit;
 
   const filter = buildProductFilter(req.query as Record<string, string>);

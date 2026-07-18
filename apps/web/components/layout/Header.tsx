@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Search, ShoppingBag, Heart, User, Menu, X } from "lucide-react";
 import { useCartStore } from "@/lib/stores/cart.store";
 import { useWishlistStore } from "@/lib/stores/wishlist.store";
@@ -8,15 +9,17 @@ import NotificationBell from "@/components/notifications/NotificationBell";
 
 
 const NAV = [
+  { label: "Men",          href: "/products?gender=men" },
+  { label: "Women",        href: "/products?gender=women" },
   { label: "New Arrivals", href: "/products?sort=newest" },
   { label: "Dresses",      href: "/products?category=dresses" },
   { label: "Ethnic Wear",  href: "/products?category=ethnic" },
   { label: "Footwear",     href: "/products?category=footwear" },
-  { label: "Accessories",  href: "/products?category=accessories" },
   { label: "Vendors",      href: "/vendors" },
 ];
 
 export default function Header() {
+  const router = useRouter();
   const [scrolled, setScrolled]   = useState(false);
   const [menuOpen, setMenuOpen]   = useState(false);
   const [searchOpen, setSearch]   = useState(false);
@@ -25,6 +28,14 @@ export default function Header() {
 
   const cartCount     = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
   const wishlistCount = useWishlistStore((s) => s.ids.length);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      router.push(`/products?q=${encodeURIComponent(query.trim())}`);
+      setSearch(false);
+    }
+  };
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -121,7 +132,7 @@ export default function Header() {
           </div>
 
           {/* Search bar */}
-          <div className={`overflow-hidden transition-all duration-300 ${
+          <form onSubmit={handleSearchSubmit} className={`overflow-hidden transition-all duration-300 ${
             searchOpen ? "max-h-16 pb-3" : "max-h-0"
           }`}>
             <div className="relative">
@@ -134,7 +145,7 @@ export default function Header() {
                 className="w-full pl-10 pr-4 py-2.5 text-sm bg-[var(--cream-dark)] border border-[var(--border)] rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--rose)]/30 font-body"
               />
             </div>
-          </div>
+          </form>
         </div>
 
         {/* Mobile menu */}

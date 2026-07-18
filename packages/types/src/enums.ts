@@ -25,6 +25,8 @@ export enum Gender {
   Women = 'women',
   Unisex = 'unisex',
   Kids = 'kids',
+  Boys = 'boys',
+  Girls = 'girls',
 }
 
 export enum OrderStatus {
