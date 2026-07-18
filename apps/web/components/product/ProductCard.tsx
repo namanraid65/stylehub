@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Heart, Star, ShoppingBag } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Product } from "@/lib/mock-data";
 import { useCartStore } from "@/lib/stores/cart.store";
 import { useWishlistStore } from "@/lib/stores/wishlist.store";
@@ -14,8 +14,14 @@ const fmt = (n: number) =>
 export default function ProductCard({ product }: { product: Product }) {
   const { addItem }                       = useCartStore();
   const { toggle: toggleWish, isWished }  = useWishlistStore();
-  const wished  = isWished(product.id);
-  const [added, setAdded] = useState(false);
+  const [mounted, setMounted]             = useState(false);
+  const [added, setAdded]                 = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const wished = mounted ? isWished(product.id) : false;
   const discount = product.compareAtPrice
     ? Math.round(((product.compareAtPrice - product.basePrice) / product.compareAtPrice) * 100)
     : null;
