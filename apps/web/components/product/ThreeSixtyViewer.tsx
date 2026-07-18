@@ -37,15 +37,23 @@ export default function ThreeSixtyViewer({ images, productName }: ThreeSixtyView
   }, [isPlaying, totalFrames]);
 
   // Touch and Mouse Drag handlers
-  const handleDragStart = (clientX: number) => {
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent, clientX: number) => {
+    // Prevent default selection, text highlight or browser image drag ghost
+    if (e.cancelable) {
+      e.preventDefault();
+    }
     setIsDragging(true);
     setIsPlaying(false);
     dragStartRef.current = clientX;
     indexStartRef.current = currentIndex;
   };
 
-  const handleDragMove = (clientX: number) => {
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent, clientX: number) => {
     if (!isDragging) return;
+    // Prevent document scrolling or panning during drag
+    if (e.cancelable) {
+      e.preventDefault();
+    }
     const deltaX = clientX - dragStartRef.current;
     
     // Sensitivity: 15px drag corresponds to 1 frame rotation
@@ -78,15 +86,15 @@ export default function ThreeSixtyViewer({ images, productName }: ThreeSixtyView
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full overflow-hidden bg-gradient-to-b from-neutral-50 to-neutral-200 transition-all duration-300 rounded-3xl ${
+      className={`relative w-full overflow-hidden bg-gradient-to-b from-neutral-50 to-neutral-200 transition-all duration-300 rounded-3xl select-none ${
         isFullscreen ? "fixed inset-0 z-50 rounded-none flex items-center justify-center p-6 bg-neutral-900/95 backdrop-blur-md" : "aspect-[3/4]"
       }`}
-      onMouseDown={(e) => handleDragStart(e.clientX)}
-      onMouseMove={(e) => handleDragMove(e.clientX)}
+      onMouseDown={(e) => handleDragStart(e, e.clientX)}
+      onMouseMove={(e) => handleDragMove(e, e.clientX)}
       onMouseUp={handleDragEnd}
       onMouseLeave={handleDragEnd}
-      onTouchStart={(e) => e.touches[0] && handleDragStart(e.touches[0].clientX)}
-      onTouchMove={(e) => e.touches[0] && handleDragMove(e.touches[0].clientX)}
+      onTouchStart={(e) => e.touches[0] && handleDragStart(e, e.touches[0].clientX)}
+      onTouchMove={(e) => e.touches[0] && handleDragMove(e, e.touches[0].clientX)}
       onTouchEnd={handleDragEnd}
     >
       {/* Immersive Pedestal Display & soft shadow */}
@@ -108,7 +116,7 @@ export default function ThreeSixtyViewer({ images, productName }: ThreeSixtyView
           fill
           priority
           draggable={false}
-          className="object-contain p-4"
+          className="object-contain p-4 pointer-events-none select-none"
         />
       </div>
 
