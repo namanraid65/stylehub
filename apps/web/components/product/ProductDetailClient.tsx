@@ -83,8 +83,7 @@ export default function ProductDetailClient({ product }: Props) {
   const categoryLower = product.category.toLowerCase();
   
   const isFootwear = categoryLower.includes("footwear") || 
-                     categoryLower.includes("shoe") ||
-                     sizesForColor.some(v => !isNaN(Number(v.size)));
+                     categoryLower.includes("shoe");
 
   const isBottomwear = categoryLower.includes("denim") || 
                        categoryLower.includes("pants") || 
@@ -130,11 +129,13 @@ export default function ProductDetailClient({ product }: Props) {
     sizeChartNote = "Measurements are in inches. If between sizes, we recommend sizing up.";
   }
 
-  const isSelectedSizeRow = (rowSize: string) => {
+  const isSelectedSizeRow = (row: string[]) => {
     if (!selectedSize) return false;
     const sel = selectedSize.toLowerCase();
-    const row = rowSize.toLowerCase();
-    return sel === row || row.includes(sel) || sel.includes(row);
+    return row.some(col => {
+      const c = col.toLowerCase();
+      return sel === c || c.includes(sel) || sel.includes(c);
+    });
   };
   const effectivePrice = selectedVariant?.price ?? product.basePrice;
   const inStock = selectedVariant ? selectedVariant.stock > 0 : false;
@@ -558,12 +559,15 @@ export default function ProductDetailClient({ product }: Props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {sizeChartRows.map(([size, ...vals]) => (
-                    <tr key={size} className={`border-b border-[var(--border)] last:border-0 ${isSelectedSizeRow(size) ? "bg-[var(--rose)]/5 font-medium" : ""}`}>
-                      <td className="py-3 px-3 font-semibold text-[var(--charcoal)]">{size}</td>
-                      {vals.map((v, i) => <td key={i} className="py-3 px-3 text-[var(--charcoal-mid)]">{v}</td>)}
-                    </tr>
-                  ))}
+                  {sizeChartRows.map((row) => {
+                    const [size, ...vals] = row;
+                    return (
+                      <tr key={size} className={`border-b border-[var(--border)] last:border-0 ${isSelectedSizeRow(row) ? "bg-[var(--rose)]/5 font-semibold" : ""}`}>
+                        <td className="py-3 px-3 font-semibold text-[var(--charcoal)]">{size}</td>
+                        {vals.map((v, i) => <td key={i} className="py-3 px-3 text-[var(--charcoal-mid)]">{v}</td>)}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               <p className="text-xs font-body text-[var(--muted)] mt-4">{sizeChartNote}</p>
