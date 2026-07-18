@@ -64,8 +64,8 @@ export default function WishlistClient() {
   useEffect(() => {
     if (!mounted) return;
     const loadWishedProducts = async () => {
-      // Load local mock products
-      const mockIds = ids.filter(id => id.startsWith('p'));
+      // Load local mock products (any ID that is not a 24-character hex MongoDB ObjectID)
+      const mockIds = ids.filter(id => !/^[0-9a-fA-F]{24}$/.test(id));
       const localWished = PRODUCTS.filter(p => mockIds.includes(p.id));
 
       // Load live products
@@ -77,7 +77,7 @@ export default function WishlistClient() {
       }
       setLoading(true);
       try {
-        const url = `${API}/products?ids=${dbIds.join(',')}&limit=50&status=active`;
+        const url = `${API}/products?ids=${dbIds.join(',')}&limit=50&status=all`;
         const res = await fetch(url, { cache: 'no-store' });
         if (res.ok) {
           const json = await res.json();
