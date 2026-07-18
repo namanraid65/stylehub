@@ -90,6 +90,16 @@ export default function ProductDetailClient({ product }: Props) {
     return !isNaN(n) && n < 36;
   });
 
+  const isKidsApparel = !isFootwear && (
+    product.gender === "boys" || 
+    product.gender === "girls" ||
+    categoryLower.includes("kids") ||
+    sizesForColor.some(v => {
+      const s = v.size.toLowerCase();
+      return s.includes("y") || s.includes("year") || s.includes("kid");
+    })
+  );
+
   const isBottomwear = (categoryLower.includes("denim") || 
                         categoryLower.includes("pants") || 
                         categoryLower.includes("jeans") ||
@@ -131,6 +141,15 @@ export default function ProductDetailClient({ product }: Props) {
       ["11", "12", "13", "44", "28.8"],
     ];
     sizeChartNote = "Measurements refer to standard foot length. We recommend choosing your usual UK / Indian shoe size.";
+  } else if (isKidsApparel) {
+    sizeChartHeaders = ["Size", "Age Range", "Chest (in)", "Waist (in)", "Height (in)"];
+    sizeChartRows = [
+      ["4-5Y", "4-5 Years", "23-24", "21-22", "41-45"],
+      ["6-7Y", "6-7 Years", "25-26", "22-23", "45-49"],
+      ["8-9Y", "8-9 Years", "27-28", "23-24", "50-53"],
+      ["10-12Y", "10-12 Years", "29-30", "25-26", "54-58"],
+    ];
+    sizeChartNote = "Kids' apparel sizes correspond to standard children's growth and height ranges.";
   } else if (isBottomwear) {
     sizeChartHeaders = ["Size", "Waist (in)", "Hip (in)", "Inseam (in)", "Rise (in)"];
     sizeChartRows = [
