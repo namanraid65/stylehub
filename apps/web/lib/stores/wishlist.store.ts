@@ -6,6 +6,7 @@ interface WishlistStore {
   toggle:    (productId: string) => void;
   isWished:  (productId: string) => boolean;
   clear:     () => void;
+  setIds:    (ids: string[]) => void;
 }
 
 export const useWishlistStore = create<WishlistStore>()(
@@ -18,6 +19,7 @@ export const useWishlistStore = create<WishlistStore>()(
         })),
       isWished: (id) => get().ids.includes(id),
       clear:    ()   => set({ ids: [] }),
+      setIds:   (ids) => set({ ids }),
     }),
     { name: "stylehub-wishlist" },
   ),

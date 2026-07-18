@@ -54,7 +54,7 @@ export default function WishlistClient() {
   const [mounted, setMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
-  const { ids, toggle, clear } = useWishlistStore();
+  const { ids, toggle, clear, setIds } = useWishlistStore();
   const { addItem } = useCartStore();
 
   useEffect(() => {
@@ -73,6 +73,10 @@ export default function WishlistClient() {
 
       if (dbIds.length === 0) {
         setProducts(localWished);
+        // If we have other stale IDs in store, clean them up
+        if (localWished.length < ids.length) {
+          setIds(localWished.map(p => p.id));
+        }
         return;
       }
       setLoading(true);
@@ -92,6 +96,15 @@ export default function WishlistClient() {
             }
           });
           setProducts(merged);
+
+          // AUTOMATIC CLEANUP OF DELETED/INVALID DATABASE IDs:
+          const returnedDbIds = liveWished.map((p: any) => p.id);
+          const validMockIds = localWished.map((p: any) => p.id);
+          const allValidIds = [...validMockIds, ...returnedDbIds];
+
+          if (allValidIds.length < ids.length) {
+            setIds(allValidIds);
+          }
         } else {
           setProducts(localWished);
         }
@@ -118,37 +131,22 @@ export default function WishlistClient() {
   const wishedProducts = products;
 
   if (wishedProducts.length === 0) {
-    const hasStaleItems = ids.length > 0;
-
     return (
       <div className="min-h-screen bg-[var(--cream)] flex items-center justify-center px-4">
         <div className="text-center max-w-sm">
           <div className="h-24 w-24 rounded-full bg-[var(--cream-dark)] flex items-center justify-center mx-auto mb-6">
             <Heart className="h-12 w-12 text-[var(--muted)]" />
           </div>
-          <h1 className="font-display text-3xl font-medium text-[var(--charcoal)] mb-3">
-            {hasStaleItems ? "Wishlist out of sync" : "Your wishlist is empty"}
-          </h1>
+          <h1 className="font-display text-3xl font-medium text-[var(--charcoal)] mb-3">Your wishlist is empty</h1>
           <p className="text-sm font-body text-[var(--muted)] mb-8">
-            {hasStaleItems
-              ? "The catalog was recently updated, and your saved items are no longer available in the database."
-              : "Save your favourite pieces to revisit them later. Tap the heart icon on any product."}
+            Save your favourite pieces to revisit them later. Tap the heart icon on any product.
           </p>
-          {hasStaleItems ? (
-            <button
-              onClick={clear}
-              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[var(--rose)] text-white text-sm font-body font-medium hover:bg-[var(--rose-dark)] transition-colors cursor-pointer"
-            >
-              Reset Wishlist <Trash2 className="h-4 w-4" />
-            </button>
-          ) : (
-            <Link
-              href="/products"
-              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[var(--charcoal)] text-white text-sm font-body font-medium hover:bg-[var(--rose)] transition-colors"
-            >
-              Explore Collections <ArrowRight className="h-4 w-4" />
-            </Link>
-          )}
+          <Link
+            href="/products"
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[var(--charcoal)] text-white text-sm font-body font-medium hover:bg-[var(--rose)] transition-colors"
+          >
+            Explore Collections <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </div>
     );
