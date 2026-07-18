@@ -32,6 +32,11 @@ export default function SyncObserver() {
           },
           body: JSON.stringify({ ids: wishlistStore.ids })
         });
+        if (res.status === 401) {
+          console.warn("[SyncObserver] Wishlist sync returned 401. Clearing invalid token.");
+          localStorage.removeItem("stylehub-token");
+          return;
+        }
         if (res.ok) {
           const json = await res.json();
           if (json.success && Array.isArray(json.data)) {
@@ -59,6 +64,11 @@ export default function SyncObserver() {
           },
           body: JSON.stringify({ items: cartStore.items })
         });
+        if (res.status === 401) {
+          console.warn("[SyncObserver] Cart sync returned 401. Clearing invalid token.");
+          localStorage.removeItem("stylehub-token");
+          return;
+        }
         if (res.ok) {
           const json = await res.json();
           if (json.success && json.data) {
@@ -131,6 +141,11 @@ export default function SyncObserver() {
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({ items: cartStore.items })
+    }).then(res => {
+      if (res.status === 401) {
+        console.warn("[SyncObserver] Cart update received 401. Clearing invalid token.");
+        localStorage.removeItem("stylehub-token");
+      }
     }).catch(err => console.error("Failed to push cart changes:", err));
   }, [cartStore.items]);
 
@@ -152,6 +167,11 @@ export default function SyncObserver() {
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({ ids: wishlistStore.ids })
+    }).then(res => {
+      if (res.status === 401) {
+        console.warn("[SyncObserver] Wishlist update received 401. Clearing invalid token.");
+        localStorage.removeItem("stylehub-token");
+      }
     }).catch(err => console.error("Failed to push wishlist changes:", err));
   }, [wishlistStore.ids]);
 
