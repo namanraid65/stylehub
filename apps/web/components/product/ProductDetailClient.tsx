@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Heart, ShoppingBag, Star, Truck, RefreshCw, Shield,
   ChevronLeft, ChevronRight, ZoomIn, X, Check, Ruler,
-  Package, Store, ArrowRight, MessageSquare,
+  Package, Store, ArrowRight, MessageSquare, RotateCw,
 } from "lucide-react";
 import type { Product } from "@/lib/mock-data";
 import { useCartStore } from "@/lib/stores/cart.store";
@@ -13,6 +13,7 @@ import { useWishlistStore } from "@/lib/stores/wishlist.store";
 import EnquiryModal from "@/components/enquiry/EnquiryModal";
 import ReviewsSection from "@/components/reviews/ReviewsSection";
 import QASection from "@/components/reviews/QASection";
+import ThreeSixtyViewer from "@/components/product/ThreeSixtyViewer";
 
 
 const fmt = (n: number) =>
@@ -26,6 +27,7 @@ export default function ProductDetailClient({ product }: Props) {
 
   const [selectedImg,   setSelectedImg]   = useState(0);
   const [lightbox,      setLightbox]      = useState(false);
+  const [viewMode,      setViewMode]      = useState<"gallery" | "360">("gallery");
   const [selectedColor, setSelectedColor] = useState(product.variants[0]?.color ?? "");
   const [selectedSize,  setSelectedSize]  = useState("");
   const [qty,           setQty]           = useState(1);
@@ -102,33 +104,49 @@ export default function ProductDetailClient({ product }: Props) {
 
           {/* ── LEFT: Image Gallery ─────────────────────────────────────────── */}
           <div className="space-y-4">
-            {/* Main image */}
-            <div className="relative rounded-3xl overflow-hidden aspect-[3/4] bg-[var(--cream-dark)] group cursor-zoom-in" onClick={() => setLightbox(true)}>
-              <Image
-                src={product.images[selectedImg]!}
-                alt={product.name}
-                fill
-                priority
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              {/* Zoom hint */}
-              <div className="absolute top-4 right-4 p-2 rounded-full bg-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                <ZoomIn className="h-4 w-4 text-[var(--charcoal)]" />
-              </div>
-              {/* Nav arrows */}
-              {product.images.length > 1 && (
-                <>
-                  <button
-                    className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/90 shadow-md hover:bg-white transition-colors"
-                    onClick={(e) => { e.stopPropagation(); setSelectedImg((i) => (i - 1 + product.images.length) % product.images.length); }}
-                  ><ChevronLeft className="h-4 w-4" /></button>
-                  <button
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/90 shadow-md hover:bg-white transition-colors"
-                    onClick={(e) => { e.stopPropagation(); setSelectedImg((i) => (i + 1) % product.images.length); }}
-                  ><ChevronRight className="h-4 w-4" /></button>
-                </>
-              )}
+            {/* View Mode Toggle Badge */}
+            <div className="flex justify-end mb-2">
+              <button
+                type="button"
+                onClick={() => setViewMode(viewMode === "gallery" ? "360" : "gallery")}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-[var(--border)] bg-white hover:bg-neutral-50 shadow-sm transition-all text-xs font-body font-bold text-[var(--charcoal)]"
+              >
+                <RotateCw className={`h-3.5 w-3.5 text-[var(--rose)] ${viewMode === "360" ? "animate-spin" : ""}`} />
+                {viewMode === "gallery" ? "Interactive 360° View" : "Back to Photo Gallery"}
+              </button>
             </div>
+
+            {/* Main image / 360 Viewer */}
+            {viewMode === "360" ? (
+              <ThreeSixtyViewer images={product.images} productName={product.name} />
+            ) : (
+              <div className="relative rounded-3xl overflow-hidden aspect-[3/4] bg-[var(--cream-dark)] group cursor-zoom-in" onClick={() => setLightbox(true)}>
+                <Image
+                  src={product.images[selectedImg]!}
+                  alt={product.name}
+                  fill
+                  priority
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                {/* Zoom hint */}
+                <div className="absolute top-4 right-4 p-2 rounded-full bg-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ZoomIn className="h-4 w-4 text-[var(--charcoal)]" />
+                </div>
+                {/* Nav arrows */}
+                {product.images.length > 1 && (
+                  <>
+                    <button
+                      className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/90 shadow-md hover:bg-white transition-colors"
+                      onClick={(e) => { e.stopPropagation(); setSelectedImg((i) => (i - 1 + product.images.length) % product.images.length); }}
+                    ><ChevronLeft className="h-4 w-4" /></button>
+                    <button
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/90 shadow-md hover:bg-white transition-colors"
+                      onClick={(e) => { e.stopPropagation(); setSelectedImg((i) => (i + 1) % product.images.length); }}
+                    ><ChevronRight className="h-4 w-4" /></button>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Thumbnails */}
             {product.images.length > 1 && (
