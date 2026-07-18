@@ -76,6 +76,10 @@ export default function ProductDetailClient({ product }: Props) {
   // Sizes for selected colour
   const sizesForColor = product.variants.filter((v) => v.color === selectedColor);
   const selectedVariant = sizesForColor.find((v) => v.size === selectedSize);
+  const needsSizeGuide = sizesForColor.length > 1 && !sizesForColor.some(v => {
+    const s = v.size.toLowerCase();
+    return s === "free size" || s === "onesize" || s === "fs" || s === "one size" || s === "o/s";
+  });
   const effectivePrice = selectedVariant?.price ?? product.basePrice;
   const inStock = selectedVariant ? selectedVariant.stock > 0 : false;
   const stockLevel = selectedVariant?.stock ?? 0;
@@ -263,41 +267,45 @@ export default function ProductDetailClient({ product }: Props) {
             </div>
 
             {/* Size selector */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-body font-semibold text-[var(--charcoal)] uppercase tracking-wider">Size</p>
-                <button
-                  onClick={() => setSizeChart(true)}
-                  className="flex items-center gap-1 text-xs font-body text-[var(--rose)] hover:text-[var(--rose-dark)] transition-colors"
-                >
-                  <Ruler className="h-3.5 w-3.5" /> Size Guide
-                </button>
+            {sizesForColor.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-body font-semibold text-[var(--charcoal)] uppercase tracking-wider">Size</p>
+                  {needsSizeGuide && (
+                    <button
+                      onClick={() => setSizeChart(true)}
+                      className="flex items-center gap-1 text-xs font-body text-[var(--rose)] hover:text-[var(--rose-dark)] transition-colors"
+                    >
+                      <Ruler className="h-3.5 w-3.5" /> Size Guide
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {sizesForColor.map((v) => (
+                    <button
+                      key={v.size}
+                      onClick={() => setSelectedSize(v.size)}
+                      disabled={v.stock === 0}
+                      className={`px-4 py-2.5 rounded-xl border text-sm font-body font-medium transition-all relative ${
+                        selectedSize === v.size
+                          ? "border-[var(--charcoal)] bg-[var(--charcoal)] text-white"
+                          : v.stock === 0
+                          ? "border-[var(--border)] text-[var(--muted)] cursor-not-allowed line-through bg-[var(--cream-dark)]"
+                          : "border-[var(--border)] text-[var(--charcoal)] hover:border-[var(--charcoal)]"
+                      }`}
+                    >
+                      {v.size}
+                      {v.stock > 0 && v.stock <= 4 && selectedSize !== v.size && (
+                        <span className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 bg-[var(--rose)] rounded-full" title={`Only ${v.stock} left`} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {selectedSize && stockLevel <= 5 && stockLevel > 0 && (
+                  <p className="mt-2 text-xs font-body text-[var(--rose)] font-medium">Only {stockLevel} left — order soon!</p>
+                )}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {sizesForColor.map((v) => (
-                  <button
-                    key={v.size}
-                    onClick={() => setSelectedSize(v.size)}
-                    disabled={v.stock === 0}
-                    className={`px-4 py-2.5 rounded-xl border text-sm font-body font-medium transition-all relative ${
-                      selectedSize === v.size
-                        ? "border-[var(--charcoal)] bg-[var(--charcoal)] text-white"
-                        : v.stock === 0
-                        ? "border-[var(--border)] text-[var(--muted)] cursor-not-allowed line-through bg-[var(--cream-dark)]"
-                        : "border-[var(--border)] text-[var(--charcoal)] hover:border-[var(--charcoal)]"
-                    }`}
-                  >
-                    {v.size}
-                    {v.stock > 0 && v.stock <= 4 && selectedSize !== v.size && (
-                      <span className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 bg-[var(--rose)] rounded-full" title={`Only ${v.stock} left`} />
-                    )}
-                  </button>
-                ))}
-              </div>
-              {selectedSize && stockLevel <= 5 && stockLevel > 0 && (
-                <p className="mt-2 text-xs font-body text-[var(--rose)] font-medium">Only {stockLevel} left — order soon!</p>
-              )}
-            </div>
+            )}
 
             {/* Qty + Add to cart */}
             <div className="flex gap-3">
