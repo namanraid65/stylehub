@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -34,9 +34,13 @@ export default function ProductDetailClient({ product }: Props) {
   const [addedToCart,   setAddedToCart]   = useState(false);
   const [sizeChart,     setSizeChart]     = useState(false);
   const [activeTab, setActiveTab] = useState<"details"|"care"|"reviews"|"qa">("details");
+  const [mounted,       setMounted]       = useState(false);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  const wished = isWished(product.id);
+  const wished = mounted ? isWished(product.id) : false;
 
 
   // Unique colours
