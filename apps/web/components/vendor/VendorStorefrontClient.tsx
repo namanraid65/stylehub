@@ -14,6 +14,7 @@ interface Props { vendor: Vendor; products: Product[]; }
 export default function VendorStorefrontClient({ vendor, products }: Props) {
   const [activeTab, setActiveTab] = useState<"products" | "about">("products");
   const [sortBy,    setSortBy]    = useState("popular");
+  const [isFollowing, setIsFollowing] = useState(false);
 
   const sorted = [...products].sort((a, b) => {
     if (sortBy === "price-asc")  return a.basePrice - b.basePrice;
@@ -95,7 +96,7 @@ export default function VendorStorefrontClient({ vendor, products }: Props) {
                   </span>
                   <span className="flex items-center gap-1.5">
                     <Package className="h-4 w-4 text-[var(--rose)] shrink-0" />
-                    {vendor.productCount}+ products
+                    {products.length} products
                   </span>
                 </div>
               </div>
@@ -112,8 +113,16 @@ export default function VendorStorefrontClient({ vendor, products }: Props) {
                     </span>
                   ))}
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--rose)] text-[var(--rose)] text-xs font-body font-medium hover:bg-[var(--rose)] hover:text-white transition-all">
-                  <Heart className="h-3.5 w-3.5" /> Follow Store
+                <button
+                  onClick={() => setIsFollowing(!isFollowing)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${
+                    isFollowing
+                      ? "bg-[var(--rose)] border-[var(--rose)] text-white font-medium"
+                      : "border-[var(--rose)] text-[var(--rose)] text-xs font-body font-medium hover:bg-[var(--rose)] hover:text-white"
+                  }`}
+                >
+                  <Heart className={`h-3.5 w-3.5 ${isFollowing ? "fill-white" : ""}`} />
+                  {isFollowing ? "Following" : "Follow Store"}
                 </button>
               </div>
             </div>
@@ -123,7 +132,7 @@ export default function VendorStorefrontClient({ vendor, products }: Props) {
         {/* ── Stats Row ──────────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
           {[
-            { icon: Package,  label: "Products",       value: `${vendor.productCount}+`                            },
+            { icon: Package,  label: "Products",       value: `${products.length}`                                 },
             { icon: Star,     label: "Avg. Rating",     value: avgRating                                            },
             { icon: Award,    label: "Happy Customers", value: `${(vendor.reviewCount * 4).toLocaleString("en-IN")}+` },
             { icon: Globe,    label: "Ships From",      value: vendor.location.split(",")[0]!                       },
