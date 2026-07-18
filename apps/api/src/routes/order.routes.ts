@@ -173,12 +173,15 @@ router.post('/',
     // Update product stock and soldCount for each item in the order
     for (const group of fulfillments) {
       for (const item of group.items) {
+        if (!mongoose.isValidObjectId(item.productId)) {
+          continue;
+        }
         const product = await Product.findById(item.productId);
         if (product) {
           product.soldCount = (product.soldCount || 0) + item.quantity;
           
           // Find matching variant and decrement its stock
-          const variant = product.variants.find(
+          const variant = (product.variants || []).find(
             (v: any) => v.size === item.size && v.color === item.color
           );
           if (variant) {
@@ -186,7 +189,7 @@ router.post('/',
           }
           
           // Recalculate totalStock
-          product.totalStock = product.variants.reduce((sum: number, v: any) => sum + v.stock, 0);
+          product.totalStock = (product.variants || []).reduce((sum: number, v: any) => sum + v.stock, 0);
           await product.save();
         }
       }
