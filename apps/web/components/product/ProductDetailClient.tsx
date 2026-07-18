@@ -85,6 +85,11 @@ export default function ProductDetailClient({ product }: Props) {
   const isFootwear = categoryLower.includes("footwear") || 
                      categoryLower.includes("shoe");
 
+  const isKidsFootwear = isFootwear && sizesForColor.some(v => {
+    const n = Number(v.size);
+    return !isNaN(n) && n < 36;
+  });
+
   const isBottomwear = categoryLower.includes("denim") || 
                        categoryLower.includes("pants") || 
                        categoryLower.includes("jeans") ||
@@ -95,10 +100,29 @@ export default function ProductDetailClient({ product }: Props) {
   let sizeChartRows: string[][] = [];
   let sizeChartNote: string = "";
 
-  if (isFootwear) {
+  if (isKidsFootwear) {
+    sizeChartHeaders = ["EU Size", "UK Size", "US Size", "Foot Length (cm)"];
+    sizeChartRows = [
+      ["25", "7.5 (Kids)", "8.5 (Kids)", "15.6"],
+      ["26", "8.5 (Kids)", "9.5 (Kids)", "16.2"],
+      ["27", "9 (Kids)", "10 (Kids)", "16.8"],
+      ["28", "10 (Kids)", "11 (Kids)", "17.4"],
+      ["29", "11 (Kids)", "12 (Kids)", "18.0"],
+      ["30", "11.5 (Kids)", "12.5 (Kids)", "18.7"],
+      ["31", "12.5 (Kids)", "13.5 (Kids)", "19.3"],
+      ["32", "13 (Kids)", "1 (Youth)", "20.0"],
+      ["33", "1 (Youth)", "2 (Youth)", "20.6"],
+      ["34", "2 (Youth)", "3 (Youth)", "21.3"],
+      ["35", "2.5 (Youth)", "3.5 (Youth)", "21.9"],
+    ];
+    sizeChartNote = "Kids' footwear sizes map EU sizes to UK and US children sizing formats.";
+  } else if (isFootwear) {
     sizeChartHeaders = ["UK / India", "US (Men)", "US (Women)", "EU", "Foot Length (cm)"];
     sizeChartRows = [
-      ["6", "7", "8", "39", "24.5"],
+      ["3", "4", "5", "36", "22.0"],
+      ["4", "5", "6", "37", "22.9"],
+      ["5", "6", "7", "38", "23.7"],
+      ["6", "7", "8", "39", "24.6"],
       ["7", "8", "9", "40", "25.4"],
       ["8", "9", "10", "41", "26.2"],
       ["9", "10", "11", "42", "27.1"],
