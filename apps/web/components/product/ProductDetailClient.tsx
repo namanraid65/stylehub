@@ -442,8 +442,11 @@ export default function ProductDetailClient({ product }: Props) {
 
       {/* ── Lightbox ──────────────────────────────────────────────────────────── */}
       {lightbox && (
-        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center" onClick={() => setLightbox(false)}>
-          <button className="absolute top-4 right-4 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors">
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center cursor-zoom-out" onClick={() => setLightbox(false)}>
+          <button 
+            onClick={(e) => { e.stopPropagation(); setLightbox(false); }}
+            className="absolute top-4 right-4 z-10 p-2.5 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 transition-all"
+          >
             <X className="h-6 w-6 text-white" />
           </button>
           <div className="relative w-[90vw] max-w-xl aspect-[3/4]">
