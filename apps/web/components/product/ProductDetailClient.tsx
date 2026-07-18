@@ -106,6 +106,20 @@ export default function ProductDetailClient({ product }: Props) {
                         categoryLower.includes("bottom")) &&
                        sizesForColor.some(v => !isNaN(Number(v.size)));
 
+  const isTopsOrShirts = !isFootwear && !isKidsApparel && !isBottomwear && (
+    categoryLower.includes("tops") || 
+    categoryLower.includes("shirt") ||
+    categoryLower.includes("coord") ||
+    categoryLower.includes("jacket") ||
+    categoryLower.includes("t-shirt") ||
+    categoryLower.includes("tee") ||
+    product.name.toLowerCase().includes("shirt") ||
+    product.name.toLowerCase().includes("top") ||
+    product.name.toLowerCase().includes("jacket") ||
+    product.name.toLowerCase().includes("hoodie") ||
+    product.name.toLowerCase().includes("sweatshirt")
+  );
+
   // Determine appropriate size chart
   let sizeChartHeaders: string[] = [];
   let sizeChartRows: string[][] = [];
@@ -160,8 +174,18 @@ export default function ProductDetailClient({ product }: Props) {
       ["36", "36", "44", "32", "11.5"],
     ];
     sizeChartNote = "Bottomwear sizes match standard waist measurements in inches.";
+  } else if (isTopsOrShirts) {
+    sizeChartHeaders = ["Size", "Bust (in)", "Waist (in)", "Sleeve (in)", "Length (in)"];
+    sizeChartRows = [
+      ["XS", "31-32", "25-26", "23.0", "24.5"],
+      ["S", "33-34", "27-28", "23.5", "25.0"],
+      ["M", "35-36", "29-30", "24.0", "25.5"],
+      ["L", "37-38", "31-32", "24.5", "26.0"],
+      ["XL", "39-40", "33-34", "25.0", "26.5"],
+    ];
+    sizeChartNote = "Measurements are in inches and refer to body dimensions. Tops are designed for a standard torso fit.";
   } else {
-    // Default Upperwear / Dresses / Tops size chart
+    // Default Longwear / Dresses / Kaftans / Kurtas size chart
     sizeChartHeaders = ["Size", "Bust (in)", "Waist (in)", "Hip (in)", "Length (in)"];
     sizeChartRows = [
       ["XS", "31-32", "25-26", "34-35", "52"],
@@ -170,7 +194,7 @@ export default function ProductDetailClient({ product }: Props) {
       ["L", "37-38", "31-32", "40-41", "55"],
       ["XL", "39-40", "33-34", "42-43", "55"],
     ];
-    sizeChartNote = "Measurements are in inches. If between sizes, we recommend sizing up.";
+    sizeChartNote = "Measurements are in inches. Full-length garments are styled for an elegant drape.";
   }
 
   const isSelectedSizeRow = (row: string[]) => {
