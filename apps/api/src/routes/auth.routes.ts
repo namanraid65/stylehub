@@ -64,4 +64,13 @@ router.put('/me', protect, authController.updateProfile);
 /** POST /api/auth/logout — Requires valid JWT */
 router.post('/logout', protect, authController.logout);
 
+/** GET /api/auth/wishlist — Get wishlist product IDs */
+router.get('/wishlist', protect, authController.getWishlist);
+
+/** POST /api/auth/wishlist — Toggle item in wishlist */
+router.post('/wishlist', protect, authController.toggleWishlist);
+
+/** POST /api/auth/wishlist/sync — Batch sync client wishlist */
+router.post('/wishlist/sync', protect, authController.syncWishlist);
+
 export default router;

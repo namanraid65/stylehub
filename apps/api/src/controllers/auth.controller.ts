@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { z } from 'zod';
 import User from '../models/User';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -130,4 +131,61 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
   await user.save();
 
   res.status(200).json(ApiResponseBuilder.success('Profile updated successfully.', user));
+});
+
+// ─── GET /api/auth/wishlist ───────────────────────────────────────────────────
+export const getWishlist = asyncHandler(async (req: Request, res: Response) => {
+  const user = await User.findById(req.user!._id).select('wishlist').lean();
+  res.status(200).json(ApiResponseBuilder.success('Wishlist IDs fetched.', user?.wishlist ?? []));
+});
+
+// ─── POST /api/auth/wishlist ──────────────────────────────────────────────────
+export const toggleWishlist = asyncHandler(async (req: Request, res: Response) => {
+  const { productId } = req.body as { productId: string };
+  if (!productId || !mongoose.isValidObjectId(productId)) {
+    res.status(400).json(ApiResponseBuilder.error('Invalid product ID.'));
+    return;
+  }
+
+  const user = await User.findById(req.user!._id);
+  if (!user) {
+    res.status(404).json(ApiResponseBuilder.error('User not found.'));
+    return;
+  }
+
+  if (!user.wishlist) user.wishlist = [];
+
+  const index = user.wishlist.findIndex(id => id.toString() === productId);
+  if (index > -1) {
+    user.wishlist.splice(index, 1);
+  } else {
+    user.wishlist.push(new mongoose.Types.ObjectId(productId));
+  }
+
+  await user.save();
+  res.status(200).json(ApiResponseBuilder.success('Wishlist updated.', user.wishlist));
+});
+
+// ─── POST /api/auth/wishlist/sync ─────────────────────────────────────────────
+export const syncWishlist = asyncHandler(async (req: Request, res: Response) => {
+  const { ids = [] } = req.body as { ids: string[] };
+  const validIds = ids.filter(id => mongoose.isValidObjectId(id)).map(id => new mongoose.Types.ObjectId(id));
+
+  const user = await User.findById(req.user!._id);
+  if (!user) {
+    res.status(404).json(ApiResponseBuilder.error('User not found.'));
+    return;
+  }
+
+  if (!user.wishlist) user.wishlist = [];
+
+  // Merge arrays avoiding duplicates
+  validIds.forEach(id => {
+    if (!user.wishlist.some(wId => wId.toString() === id.toString())) {
+      user.wishlist.push(id);
+    }
+  });
+
+  await user.save();
+  res.status(200).json(ApiResponseBuilder.success('Wishlist synchronized.', user.wishlist));
 });

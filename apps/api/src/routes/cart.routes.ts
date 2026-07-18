@@ -19,4 +19,6 @@ router.delete('/items/:itemId',  cartController.removeCartItem);
 router.post('/coupon',           cartController.applyCoupon);
 router.delete('/coupon',         cartController.removeCoupon);
 
+router.post('/sync',             cartController.syncCart);
+
 export default router;

@@ -38,6 +38,7 @@ interface CartStore {
   applyCoupon:  (coupon: AppliedCoupon) => void;
   removeCoupon: () => void;
   clearCart:    () => void;
+  setItems:     (items: CartItem[]) => void;
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -76,6 +77,7 @@ export const useCartStore = create<CartStore>()(
       applyCoupon:  (coupon) => set({ coupon }),
       removeCoupon: ()       => set({ coupon: null }),
       clearCart:    ()       => set({ items: [], coupon: null }),
+      setItems:     (items)  => set({ items }),
     }),
     { name: "stylehub-cart" },
   ),
