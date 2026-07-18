@@ -50,6 +50,18 @@ export default function ProductDetailClient({ product }: Props) {
     }
   }, [selectedColor, product.variants]);
 
+  // Lock body scroll when lightbox or size guide modal is open
+  useEffect(() => {
+    if (lightbox || sizeChart) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [lightbox, sizeChart]);
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - left) / width) * 100;
