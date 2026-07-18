@@ -42,6 +42,14 @@ export default function ProductDetailClient({ product }: Props) {
 
   const wished = mounted ? isWished(product.id) : false;
 
+  // Auto-select size if only one size (e.g. Free Size) is available in stock for this color
+  useEffect(() => {
+    const sizes = product.variants.filter((v) => v.color === selectedColor);
+    if (sizes.length === 1 && sizes[0] && sizes[0].stock > 0) {
+      setSelectedSize(sizes[0].size);
+    }
+  }, [selectedColor, product.variants]);
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - left) / width) * 100;
