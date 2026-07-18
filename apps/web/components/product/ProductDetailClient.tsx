@@ -90,10 +90,11 @@ export default function ProductDetailClient({ product }: Props) {
     return !isNaN(n) && n < 36;
   });
 
-  const isBottomwear = categoryLower.includes("denim") || 
-                       categoryLower.includes("pants") || 
-                       categoryLower.includes("jeans") ||
-                       categoryLower.includes("bottom");
+  const isBottomwear = (categoryLower.includes("denim") || 
+                        categoryLower.includes("pants") || 
+                        categoryLower.includes("jeans") ||
+                        categoryLower.includes("bottom")) &&
+                       sizesForColor.some(v => !isNaN(Number(v.size)));
 
   // Determine appropriate size chart
   let sizeChartHeaders: string[] = [];
