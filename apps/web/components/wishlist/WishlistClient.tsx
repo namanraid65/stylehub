@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Heart, ArrowRight, ShoppingBag, Trash2 } from "lucide-react";
 import { useWishlistStore } from "@/lib/stores/wishlist.store";
 import { useCartStore } from "@/lib/stores/cart.store";
-import type { Product } from "@/lib/mock-data";
+import { PRODUCTS, type Product } from "@/lib/mock-data";
 import ProductCard from "@/components/product/ProductCard";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api';
@@ -64,22 +64,40 @@ export default function WishlistClient() {
   useEffect(() => {
     if (!mounted) return;
     const loadWishedProducts = async () => {
-      const validIds = ids.filter(id => /^[0-9a-fA-F]{24}$/.test(id));
-      if (validIds.length === 0) {
-        setProducts([]);
+      // Load local mock products
+      const mockIds = ids.filter(id => id.startsWith('p'));
+      const localWished = PRODUCTS.filter(p => mockIds.includes(p.id));
+
+      // Load live products
+      const dbIds = ids.filter(id => /^[0-9a-fA-F]{24}$/.test(id));
+
+      if (dbIds.length === 0) {
+        setProducts(localWished);
         return;
       }
       setLoading(true);
       try {
-        const url = `${API}/products?ids=${validIds.join(',')}&limit=50&status=active`;
+        const url = `${API}/products?ids=${dbIds.join(',')}&limit=50&status=active`;
         const res = await fetch(url, { cache: 'no-store' });
         if (res.ok) {
           const json = await res.json();
           const raw = json.data?.products || json.data || [];
-          setProducts(raw.map(mapLiveProduct));
+          const liveWished = raw.map(mapLiveProduct);
+
+          // Merge local and live wished products, avoiding duplicates
+          const merged = [...localWished];
+          liveWished.forEach((lp: any) => {
+            if (!merged.some(m => m.id === lp.id)) {
+              merged.push(lp);
+            }
+          });
+          setProducts(merged);
+        } else {
+          setProducts(localWished);
         }
       } catch (err) {
         console.error("Failed to load wishlist products from API:", err);
+        setProducts(localWished);
       } finally {
         setLoading(false);
       }
