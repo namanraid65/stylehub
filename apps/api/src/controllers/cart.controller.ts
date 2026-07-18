@@ -9,7 +9,14 @@ import { ApiError } from '../utils/ApiError';
 // ─── GET /api/cart ────────────────────────────────────────────────────────────
 export const getCart = asyncHandler(async (req: Request, res: Response) => {
   const cart = await Cart.findOne({ user: req.user!._id })
-    .populate('items.product', 'name slug images status totalStock basePrice')
+    .populate({
+      path: 'items.product',
+      select: 'name slug images status totalStock basePrice brand vendor',
+      populate: {
+        path: 'vendor',
+        select: 'storeName slug',
+      },
+    })
     .lean();
 
   res.json(ApiResponseBuilder.success('Cart fetched.', cart ?? { items: [] }));
@@ -186,7 +193,14 @@ export const syncCart = asyncHandler(async (req: Request, res: Response) => {
   await cart.save();
   // Fetch fully populated cart
   const populated = await Cart.findOne({ user: req.user!._id })
-    .populate('items.product', 'name slug images status totalStock basePrice')
+    .populate({
+      path: 'items.product',
+      select: 'name slug images status totalStock basePrice brand vendor',
+      populate: {
+        path: 'vendor',
+        select: 'storeName slug',
+      },
+    })
     .lean();
 
   res.status(200).json(ApiResponseBuilder.success('Cart synchronized.', populated ?? { items: [] }));
