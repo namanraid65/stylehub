@@ -21,6 +21,7 @@ export default function SyncObserver() {
     }
 
     const performSync = async (token: string) => {
+      console.log("[SyncObserver] Starting cart & wishlist database sync...");
       // 1. Sync Wishlist
       try {
         const res = await fetch(`${API}/auth/wishlist/sync`, {
@@ -35,9 +36,14 @@ export default function SyncObserver() {
           const json = await res.json();
           if (json.success && Array.isArray(json.data)) {
             const serverIds = json.data.map((id: any) => id.toString());
+            console.log("[SyncObserver] Wishlist synchronized successfully. Server IDs:", serverIds);
             wishlistStore.setIds(serverIds);
             prevWishlistIdsStr.current = JSON.stringify(serverIds);
+          } else {
+            console.warn("[SyncObserver] Wishlist sync returned unsuccessful status:", json);
           }
+        } else {
+          console.error("[SyncObserver] Wishlist sync API failed with status:", res.status);
         }
       } catch (err) {
         console.error("Failed to sync wishlist to server:", err);
@@ -73,9 +79,14 @@ export default function SyncObserver() {
               sku:            item.variantSnapshot.sku,
               quantity:       item.quantity,
             }));
+            console.log("[SyncObserver] Cart synchronized successfully. Mapped Items:", mappedItems);
             cartStore.setItems(mappedItems);
             prevCartItemsStr.current = JSON.stringify(mappedItems);
+          } else {
+            console.warn("[SyncObserver] Cart sync returned unsuccessful status:", json);
           }
+        } else {
+          console.error("[SyncObserver] Cart sync API failed with status:", res.status);
         }
       } catch (err) {
         console.error("Failed to sync cart to server:", err);
