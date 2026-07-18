@@ -568,12 +568,20 @@ export default function ProductDetailClient({ product }: Props) {
       {sizeChart && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSizeChart(false)}>
           <div className="absolute inset-0 bg-black/50" />
-          <div className="relative bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-[var(--border)]">
-              <h3 className="font-display text-xl font-medium">Size Guide</h3>
-              <button onClick={() => setSizeChart(false)} className="p-1.5 rounded-full hover:bg-[var(--cream-dark)] transition-colors"><X className="h-5 w-5" /></button>
+          <div 
+            className="relative bg-white rounded-3xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden shadow-2xl" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-5 sm:p-6 border-b border-[var(--border)] shrink-0">
+              <h3 className="font-display text-lg sm:text-xl font-semibold text-[var(--charcoal)]">Size Guide</h3>
+              <button 
+                onClick={() => setSizeChart(false)} 
+                className="p-2 rounded-full hover:bg-[var(--cream-dark)] active:scale-95 transition-all text-[var(--charcoal)]"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <div className="p-6 overflow-x-auto">
+            <div className="p-5 sm:p-6 overflow-auto flex-1">
               <table className="w-full text-sm font-body">
                 <thead>
                   <tr className="border-b border-[var(--border)]">
@@ -583,15 +591,68 @@ export default function ProductDetailClient({ product }: Props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {sizeChartRows.map((row) => {
-                    const [size, ...vals] = row;
-                    return (
-                      <tr key={size} className={`border-b border-[var(--border)] last:border-0 ${isSelectedSizeRow(row) ? "bg-[var(--rose)]/5 font-semibold" : ""}`}>
-                        <td className="py-3 px-3 font-semibold text-[var(--charcoal)]">{size}</td>
-                        {vals.map((v, i) => <td key={i} className="py-3 px-3 text-[var(--charcoal-mid)]">{v}</td>)}
-                      </tr>
-                    );
-                  })}
+                  {(() => {
+                    const filtered = sizeChartRows.filter((row) => {
+                      const [size] = row;
+                      return sizesForColor.some(v => {
+                        const vs = v.size.toLowerCase();
+                        const rs = size.toLowerCase();
+                        return vs === rs || rs.includes(vs) || vs.includes(rs);
+                      });
+                    });
+                    const rowsToRender = filtered.length > 0 ? filtered : sizeChartRows;
+                    
+                    return rowsToRender.map((row) => {
+                      const [size, ...vals] = row;
+                      const variantForSize = sizesForColor.find(v => {
+                        const vs = v.size.toLowerCase();
+                        const rs = size.toLowerCase();
+                        return vs === rs || rs.includes(vs) || vs.includes(rs);
+                      });
+                      const isOffered = !!variantForSize;
+                      const isInStock = variantForSize ? variantForSize.stock > 0 : false;
+                      const isHighlighted = isSelectedSizeRow(row);
+
+                      return (
+                        <tr 
+                          key={size} 
+                          className={`border-b border-[var(--border)] last:border-0 transition-colors ${
+                            isHighlighted 
+                              ? "bg-[var(--rose)]/5 font-semibold text-[var(--charcoal)]" 
+                              : !isOffered 
+                              ? "opacity-40 bg-neutral-50/50" 
+                              : !isInStock 
+                              ? "opacity-60 text-neutral-400" 
+                              : "text-[var(--charcoal)]"
+                          }`}
+                        >
+                          <td className="py-3 px-3 font-semibold flex items-center gap-2">
+                            <span className={!isOffered ? "line-through text-neutral-400" : ""}>{size}</span>
+                            {isHighlighted && (
+                              <span className="px-1.5 py-0.5 rounded bg-[var(--rose)] text-white text-[9px] uppercase tracking-wider scale-90">Selected</span>
+                            )}
+                            {isOffered && !isInStock && (
+                              <span className="px-1.5 py-0.5 rounded bg-neutral-200 text-neutral-500 text-[9px] uppercase tracking-wider scale-90">OOS</span>
+                            )}
+                          </td>
+                          {vals.map((v, i) => (
+                            <td 
+                              key={i} 
+                              className={`py-3 px-3 ${
+                                isHighlighted 
+                                  ? "text-[var(--charcoal)]" 
+                                  : !isOffered 
+                                  ? "text-neutral-400" 
+                                  : "text-[var(--charcoal-mid)]"
+                              } ${!isOffered ? "line-through text-neutral-300" : ""}`}
+                            >
+                              {v}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
               <p className="text-xs font-body text-[var(--muted)] mt-4">{sizeChartNote}</p>
