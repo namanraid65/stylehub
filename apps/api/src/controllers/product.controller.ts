@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import slugify from 'slugify';
 import Product, { IProductDoc } from '../models/Product';
 import Vendor from '../models/Vendor';
+import User from '../models/User';
+import Notification from '../models/Notification';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponseBuilder } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
@@ -170,6 +172,28 @@ export const createProduct = asyncHandler(async (req: Request, res: Response) =>
   }
 
   const product = await Product.create({ name, slug: finalSlug, vendor: vendorId, ...rest });
+
+  // Notification for followers
+  try {
+    const vendor = await Vendor.findById(vendorId);
+    if (vendor) {
+      const followers = await User.find({ followedVendors: vendor._id });
+      if (followers.length > 0) {
+        await Notification.create(
+          followers.map((f) => ({
+            recipient: f._id,
+            type: 'system',
+            title: `New Arrival at ${vendor.storeName}!`,
+            message: `${product.name} is now available. Click to explore.`,
+            link: `/products/${product.slug}`,
+          }))
+        );
+      }
+    }
+  } catch (err) {
+    console.error('Failed to send new product notifications:', err);
+  }
+
   res.status(201).json(ApiResponseBuilder.success('Product created.', product));
 });
 
@@ -186,8 +210,36 @@ export const updateProduct = asyncHandler(async (req: Request, res: Response) =>
     }
   }
 
+  const oldPrice = product.basePrice;
+  const oldComparePrice = product.compareAtPrice;
+
   Object.assign(product, req.body);
   await product.save();
+
+  // Notification for sale/price drop
+  try {
+    const isNewSale = product.compareAtPrice && product.compareAtPrice > product.basePrice && (!oldComparePrice || oldComparePrice <= oldPrice || product.basePrice < oldPrice);
+    if (isNewSale) {
+      const vendor = await Vendor.findById(product.vendor);
+      if (vendor) {
+        const followers = await User.find({ followedVendors: vendor._id });
+        if (followers.length > 0) {
+          await Notification.create(
+            followers.map((f) => ({
+              recipient: f._id,
+              type: 'system',
+              title: `Special Sale at ${vendor.storeName}!`,
+              message: `${product.name} is now on sale for ₹${product.basePrice}! Save big now.`,
+              link: `/products/${product.slug}`,
+            }))
+          );
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Failed to send sale notifications:', err);
+  }
+
   res.json(ApiResponseBuilder.success('Product updated.', product));
 });
 

@@ -240,4 +240,80 @@ router.delete('/:id',
   }
 );
 
+/**
+ * POST /api/vendors/:id/follow
+ * Follow / unfollow vendor storefront.
+ */
+router.post('/:id/follow', protect, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!id || !mongoose.isValidObjectId(id)) {
+      res.status(400).json(ApiResponseBuilder.error('Invalid vendor ID.'));
+      return;
+    }
+    const vendor = await Vendor.findById(id);
+    if (!vendor) {
+      res.status(404).json(ApiResponseBuilder.error('Vendor not found.'));
+      return;
+    }
+
+    const user = await User.findById(req.user!._id);
+    if (!user) {
+      res.status(404).json(ApiResponseBuilder.error('User not found.'));
+      return;
+    }
+
+    // Initialize followedVendors if it doesn't exist
+    if (!user.followedVendors) {
+      user.followedVendors = [];
+    }
+
+    const vendorObjectId = new mongoose.Types.ObjectId(id);
+    const index = user.followedVendors.findIndex(vId => vId.toString() === id);
+
+    let isFollowing = false;
+    if (index > -1) {
+      // Unfollow
+      user.followedVendors.splice(index, 1);
+    } else {
+      // Follow
+      user.followedVendors.push(vendorObjectId);
+      isFollowing = true;
+    }
+
+    await user.save();
+    res.json(ApiResponseBuilder.success(
+      isFollowing ? 'Store followed successfully.' : 'Store unfollowed successfully.',
+      { isFollowing }
+    ));
+  } catch (err) {
+    res.status(500).json(ApiResponseBuilder.error('Failed to toggle follow state.'));
+  }
+});
+
+/**
+ * GET /api/vendors/:id/follow-status
+ * Check if the user is following the vendor.
+ */
+router.get('/:id/follow-status', protect, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!id || !mongoose.isValidObjectId(id)) {
+      res.status(400).json(ApiResponseBuilder.error('Invalid vendor ID.'));
+      return;
+    }
+
+    const user = await User.findById(req.user!._id);
+    if (!user) {
+      res.status(404).json(ApiResponseBuilder.error('User not found.'));
+      return;
+    }
+
+    const isFollowing = !!(user.followedVendors && user.followedVendors.some(vId => vId.toString() === id));
+    res.json(ApiResponseBuilder.success('Follow status retrieved.', { isFollowing }));
+  } catch (err) {
+    res.status(500).json(ApiResponseBuilder.error('Failed to check follow status.'));
+  }
+});
+
 export default router;

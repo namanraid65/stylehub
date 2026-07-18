@@ -45,6 +45,7 @@ export interface IUserDoc extends Document {
   isVerified: boolean;
   isActive: boolean;
   addresses: IAddressDoc[];
+  followedVendors: mongoose.Types.ObjectId[];
   refreshToken?: string | undefined;
   emailVerificationToken?: string | undefined;
   emailVerificationExpires?: Date | undefined;
@@ -95,6 +96,7 @@ const UserSchema = new Schema<IUserDoc, IUserModel>(
     isVerified: { type: Boolean, default: false },
     isActive:   { type: Boolean, default: true },
     addresses:  { type: [AddressSchema], default: [] },
+    followedVendors: [{ type: Schema.Types.ObjectId, ref: 'Vendor', default: [] }],
 
     // Token fields — select: false so never leaked in normal queries
     refreshToken:              { type: String, select: false },

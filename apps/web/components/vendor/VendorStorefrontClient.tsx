@@ -5,9 +5,11 @@ import {
   MapPin, Star, Package, ShieldCheck, ArrowRight, Heart,
   Instagram, Globe, Award,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ProductCard from "@/components/product/ProductCard";
 import type { Vendor, Product } from "@/lib/mock-data";
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api';
 
 interface Props { vendor: Vendor; products: Product[]; }
 
@@ -15,6 +17,45 @@ export default function VendorStorefrontClient({ vendor, products }: Props) {
   const [activeTab, setActiveTab] = useState<"products" | "about">("products");
   const [sortBy,    setSortBy]    = useState("popular");
   const [isFollowing, setIsFollowing] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("stylehub-token");
+    if (!token || !vendor.id) return;
+
+    fetch(`${API}/vendors/${vendor.id}/follow-status`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(json => {
+        if (json.success && json.data) {
+          setIsFollowing(json.data.isFollowing);
+        }
+      })
+      .catch(err => console.error("Failed to fetch follow status:", err));
+  }, [vendor.id]);
+
+  const handleFollowToggle = async () => {
+    const token = localStorage.getItem("stylehub-token");
+    if (!token) {
+      alert("Please sign in to follow this store!");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API}/vendors/${vendor.id}/follow`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setIsFollowing(json.data.isFollowing);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to toggle follow status:", err);
+    }
+  };
 
   const sorted = [...products].sort((a, b) => {
     if (sortBy === "price-asc")  return a.basePrice - b.basePrice;
@@ -114,7 +155,7 @@ export default function VendorStorefrontClient({ vendor, products }: Props) {
                   ))}
                 </div>
                 <button
-                  onClick={() => setIsFollowing(!isFollowing)}
+                  onClick={handleFollowToggle}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${
                     isFollowing
                       ? "bg-[var(--rose)] border-[var(--rose)] text-white font-medium"
