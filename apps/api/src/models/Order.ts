@@ -166,14 +166,8 @@ const OrderSchema = new Schema<IOrderDoc>(
   { timestamps: true },
 );
 
-// ─── Pre-save: generate human-readable order number if not set ────────────────
-OrderSchema.pre('save', async function (next) {
-  if (!this.orderNumber) {
-    const count = await mongoose.model('Order').countDocuments();
-    this.orderNumber = `SH-${new Date().getFullYear()}-${String(count + 1).padStart(5, '0')}`;
-  }
-  next();
-});
+// Note: orderNumber is set by the route handler (generateOrderNumber) before Order.create().
+// No pre-save hook needed — this ensures a single consistent format: SH-YYYYMM-NNNN.
 
 // ─── Indexes ──────────────────────────────────────────────────────────────────
 OrderSchema.index({ orderNumber: 1 }, { unique: true });

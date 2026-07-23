@@ -177,8 +177,19 @@ export const logout = async (userId: string) => {
 
 // ─── Get current user ─────────────────────────────────────────────────────────
 export const getMe = async (userId: string) => {
-  const user = await User.findById(userId);
+  const user = await User.findById(userId).lean();
   if (!user) throw ApiError.notFound('User');
+
+  const vendor = await Vendor.findOne({ user: user._id }).lean();
+  if (vendor) {
+    return {
+      ...user,
+      vendorId: vendor._id.toString(),
+      storeName: vendor.storeName,
+      storeSlug: vendor.storeSlug,
+    };
+  }
+
   return user;
 };
 

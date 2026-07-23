@@ -27,6 +27,8 @@ export default function CheckoutClient() {
   const [step,     setStep]     = useState(1);
   const [address,  setAddress]  = useState<Address | null>(null);
   const [payment,  setPayment]  = useState<"cod" | "card">("cod");
+
+
   const [result,   setResult]   = useState<OrderResult | null>(null);
   const { items }  = useCartStore();
 

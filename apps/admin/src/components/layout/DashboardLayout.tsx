@@ -1,11 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import { useAuthStore } from '../../stores/auth.store';
+import authApi from '../../api/auth.api';
 
 const DashboardLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const token = useAuthStore.getState().accessToken;
+    if (token) {
+      authApi.me().then((res) => {
+        const userData = res.data?.data || (res as any).data;
+        if (userData) {
+          useAuthStore.getState().setAuth(userData, token);
+        }
+      }).catch(() => null);
+    }
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">

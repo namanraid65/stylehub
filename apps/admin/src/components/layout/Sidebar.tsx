@@ -35,6 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   // ── Main
   { label: 'Dashboard',     to: '/dashboard',       icon: LayoutDashboard, section: 'Main' },
   { label: 'Orders',        to: '/orders',           icon: ShoppingCart,    roles: ['admin'], section: 'Main' },
+  { label: 'Discounts',     to: '/discounts',        icon: Tag,             roles: ['admin', 'vendor'], section: 'Main' },
   // ── Catalogue
   { label: 'Products',      to: '/products',         icon: Package,         roles: ['admin'], section: 'Catalogue' },
   { label: 'Categories',    to: '/categories',       icon: Tag,             roles: ['admin'], section: 'Catalogue' },
@@ -48,6 +49,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'My Products',   to: '/vendor/products',  icon: Package,         roles: ['vendor'], section: 'My Store' },
   { label: 'My Orders',     to: '/vendor/orders',    icon: ShoppingCart,    roles: ['vendor'], section: 'My Store' },
   { label: 'My Enquiries',  to: '/vendor/enquiries', icon: MessageSquare,   roles: ['vendor'], section: 'My Store' },
+  { label: 'Payouts',       to: '/vendor/payouts',   icon: Zap,             roles: ['vendor'], section: 'My Store' },
   // ── Analytics (admin-only)
   { label: 'Analytics',     to: '/analytics',        icon: BarChart2,       roles: ['admin'], section: 'Analytics' },
   { label: 'Activity Log',  to: '/activity',         icon: Activity,        roles: ['admin'], section: 'Analytics' },
@@ -55,6 +57,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'CMS',           to: '/cms',              icon: FileText,        roles: ['admin'], section: 'Content' },
   { label: 'Settings',      to: '/settings',         icon: Settings,        roles: ['admin'], section: 'Content' },
 ];
+
 
 
 // ─── Props ────────────────────────────────────────────────────────────────────

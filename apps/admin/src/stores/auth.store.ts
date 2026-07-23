@@ -40,8 +40,8 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name:    'stylehub-admin-auth',
-      // Only persist the token — re-fetch user on refresh
-      partialize: (s) => ({ accessToken: s.accessToken }),
+      // Persist token and user state so page refresh preserves logged-in context
+      partialize: (s) => ({ accessToken: s.accessToken, user: s.user }),
     },
   ),
 );
@@ -49,6 +49,6 @@ export const useAuthStore = create<AuthState>()(
 // ─── Selectors ────────────────────────────────────────────────────────────────
 export const useUser       = () => useAuthStore((s) => s.user);
 export const useToken      = () => useAuthStore((s) => s.accessToken);
-export const useIsLoggedIn = () => useAuthStore((s) => !!s.user && !!s.accessToken);
+export const useIsLoggedIn = () => useAuthStore((s) => !!s.accessToken);
 export const useIsAdmin    = () => useAuthStore((s) => s.user?.role === 'admin');
 export const useIsVendor   = () => useAuthStore((s) => s.user?.role === 'vendor');

@@ -15,7 +15,9 @@ import analyticsRouter    from './analytics.routes';
 import cmsRouter          from './cms.routes';
 import vendorRouter       from './vendor.routes';
 import customerRouter     from './customer.routes';
-
+import discountRouter     from './discount.routes';
+import walletRouter       from './wallet.routes';
+import uploadRouter       from './upload.routes';
 
 const router = Router();
 
@@ -36,6 +38,10 @@ router.use('/analytics',    analyticsRouter);
 router.use('/cms',          cmsRouter);
 router.use('/vendors',      vendorRouter);
 router.use('/customers',    customerRouter);
+router.use('/discounts',    discountRouter);
+router.use('/wallet',       walletRouter);
+router.use('/upload',       uploadRouter);
+
 
 
 export default router;

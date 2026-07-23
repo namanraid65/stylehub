@@ -25,11 +25,24 @@ const SettingsPage: React.FC = () => {
     metaDesc: 'Discover the latest in premium designer fashion, ethnic wear, footwear and more.',
   });
 
-  const [finance, setFinance] = useState({
-    commission: 12, // 12% admin commission
-    deliveryFee: 99,
-    freeDeliveryThreshold: 1999,
-    taxRate: 18, // 18% GST
+  const [finance, setFinance] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedComm = localStorage.getItem('stylehub_platform_commission');
+      if (savedComm) {
+        return {
+          commission: Number(savedComm),
+          deliveryFee: 99,
+          freeDeliveryThreshold: 1999,
+          taxRate: 18,
+        };
+      }
+    }
+    return {
+      commission: 12, // 12% default admin commission
+      deliveryFee: 99,
+      freeDeliveryThreshold: 1999,
+      taxRate: 18,
+    };
   });
 
   const [security, setSecurity] = useState({
@@ -41,12 +54,18 @@ const SettingsPage: React.FC = () => {
   const handleSave = () => {
     setSaving(true);
     setSuccess(false);
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('stylehub_platform_commission', String(finance.commission));
+    }
+
     setTimeout(() => {
       setSaving(false);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-    }, 1200);
+    }, 800);
   };
+
 
   const navItems = [
     { id: 'general', label: 'General Configuration', icon: Globe },

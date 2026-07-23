@@ -276,20 +276,46 @@ const OrdersPage: React.FC = () => {
     setLoading(true);
     try {
       const res = await orderApi.allOrders();
-      const fetched = res.data?.data || (res as any).data || [];
-      if (fetched.length > 0) {
-        setOrders(fetched);
+      const apiOrders = res.data?.data || (res as any).data || [];
+
+      if (Array.isArray(apiOrders) && apiOrders.length > 0) {
+        setOrders(apiOrders);
       } else {
-        setOrders(DEMO_ORDERS);
+        const storedOrders = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('stylehub-placed-orders') || '[]') : [];
+        const mergedMap = new Map<string, any>();
+        if (Array.isArray(storedOrders)) {
+          storedOrders.forEach((o: any) => {
+            const key = o.orderNumber || o._id;
+            if (key) mergedMap.set(key, o);
+          });
+        }
+        DEMO_ORDERS.forEach((o: any) => {
+          const key = o.orderNumber || o._id;
+          if (key && !mergedMap.has(key)) mergedMap.set(key, o);
+        });
+        setOrders([...mergedMap.values()]);
       }
       setSelectedIds([]);
     } catch (err) {
       console.error('Failed to fetch orders:', err);
-      setOrders(DEMO_ORDERS);
+      const storedOrders = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('stylehub-placed-orders') || '[]') : [];
+      const mergedMap = new Map<string, any>();
+      if (Array.isArray(storedOrders)) {
+        storedOrders.forEach((o: any) => {
+          const key = o.orderNumber || o._id;
+          if (key) mergedMap.set(key, o);
+        });
+      }
+      DEMO_ORDERS.forEach((o: any) => {
+        const key = o.orderNumber || o._id;
+        if (key && !mergedMap.has(key)) mergedMap.set(key, o);
+      });
+      setOrders([...mergedMap.values()]);
     } finally {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchOrders();

@@ -13,9 +13,4 @@ const auth = {
 
 export default auth;
 
-// ─── Dashboard stats ──────────────────────────────────────────────────────────
-export const stats = {
-  overview: () => apiClient.get('/admin/stats/overview'),
-  revenue:  (period: 'week' | 'month' | 'year' = 'month') =>
-    apiClient.get(`/admin/stats/revenue?period=${period}`),
-};
+// Dashboard stats are available via orderApi.stats(), orderApi.analytics(), and analyticsApi

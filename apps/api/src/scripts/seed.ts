@@ -17,6 +17,8 @@ import CmsPage  from '../models/CmsPage';
 import Banner   from '../models/Banner';
 import Order    from '../models/Order';
 import Review   from '../models/Review';
+import { Discount } from '../models/Discount';
+
 
 const Cat = Category;
 const Prod = Product;
@@ -88,9 +90,53 @@ async function seed() {
   await Promise.all([
     Cat.deleteMany({}), Vendor.deleteMany({}), Prod.deleteMany({}),
     User.deleteMany({}), CmsPage.deleteMany({}), Banner.deleteMany({}),
-    Order.deleteMany({}),
+    Order.deleteMany({}), Discount.deleteMany({}),
   ]);
   console.log('🧹 Cleared existing data');
+
+  // Seed initial Discount campaigns
+  await Discount.insertMany([
+    {
+      title: 'Grand Festive Flash Sale',
+      code: 'FESTIVE30',
+      scope: 'all',
+      discountType: 'percent',
+      discountValue: 30,
+      minOrderValue: 999,
+      badgeText: 'FESTIVE 30% OFF',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 86400000 * 14),
+      isActive: true,
+    },
+    {
+      title: 'Ethnic Wear Couture Special',
+      code: 'ETHNIC20',
+      scope: 'category',
+      category: 'Ethnic Wear',
+      discountType: 'percent',
+      discountValue: 20,
+      minOrderValue: 1499,
+      badgeText: 'ETHNIC 20% OFF',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 86400000 * 30),
+      isActive: true,
+    },
+    {
+      title: 'Footwear Flat Clearance Deal',
+      code: 'SHOES500',
+      scope: 'category',
+      category: 'Footwear',
+      discountType: 'fixed',
+      discountValue: 500,
+      minOrderValue: 1999,
+      badgeText: 'FLAT ₹500 OFF',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 86400000 * 10),
+      isActive: true,
+    },
+  ]);
+  console.log('✅ Seeded 3 discount campaigns');
+
 
   // ── Categories ────────────────────────────────────────────────────────────
   const categories = await Cat.insertMany([

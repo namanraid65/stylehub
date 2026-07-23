@@ -2,7 +2,8 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import mongoose from 'mongoose';
 import Enquiry from '../models/Enquiry';
-import { optionalAuth } from '../middleware/auth';
+import { optionalAuth, protect, authorize } from '../middleware/auth';
+import { UserRole } from '@stylehub/types';
 
 const router = Router();
 
@@ -94,7 +95,7 @@ const seedEnquiriesIfEmpty = async () => {
 };
 
 // ─── GET /api/enquiries ────────────────────────────────────────────────────────
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', protect, authorize(UserRole.Admin, UserRole.Vendor), async (req: Request, res: Response) => {
   try {
     await seedEnquiriesIfEmpty();
 
@@ -139,7 +140,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // ─── GET /api/enquiries/:id ────────────────────────────────────────────────────
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', protect, authorize(UserRole.Admin, UserRole.Vendor), async (req: Request, res: Response) => {
   try {
     const enquiry = await Enquiry.findById(req.params.id)
       .populate('product', 'name slug images')
@@ -153,7 +154,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // ─── POST /api/enquiries/:id/reply ────────────────────────────────────────────
-router.post('/:id/reply', async (req: Request, res: Response) => {
+router.post('/:id/reply', protect, async (req: Request, res: Response) => {
   const parsed = replySchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ success: false, errors: parsed.error.flatten() });
@@ -163,11 +164,7 @@ router.post('/:id/reply', async (req: Request, res: Response) => {
     const enquiry = await Enquiry.findById(req.params.id);
     if (!enquiry) { res.status(404).json({ success: false, message: 'Enquiry not found.' }); return; }
 
-    const actorId = req.headers['x-user-id'] as string;
-    if (!actorId || !mongoose.isValidObjectId(actorId)) {
-      res.status(401).json({ success: false, message: 'Authentication required to reply.' });
-      return;
-    }
+    const actorId = req.user!._id;
 
     (enquiry.replies as Array<{ from: mongoose.Types.ObjectId; message: string; isAdmin: boolean; createdAt: Date }>).push({
       from:      new mongoose.Types.ObjectId(actorId),
@@ -186,7 +183,7 @@ router.post('/:id/reply', async (req: Request, res: Response) => {
 });
 
 // ─── PATCH /api/enquiries/:id/status ─────────────────────────────────────────
-router.patch('/:id/status', async (req: Request, res: Response) => {
+router.patch('/:id/status', protect, authorize(UserRole.Admin, UserRole.Vendor), async (req: Request, res: Response) => {
   const parsed = statusSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ success: false, errors: parsed.error.flatten() });
@@ -209,7 +206,7 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
 });
 
 // ─── GET /api/enquiries/stats ─────────────────────────────────────────────────
-router.get('/meta/stats', async (_req: Request, res: Response) => {
+router.get('/meta/stats', protect, authorize(UserRole.Admin), async (_req: Request, res: Response) => {
   try {
     const stats = await Enquiry.aggregate([
       { $group: { _id: '$status', count: { $sum: 1 } } },

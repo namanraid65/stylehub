@@ -2,7 +2,8 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import mongoose from 'mongoose';
 import Review from '../models/Review';
-import { protect } from '../middleware/auth';
+import { protect, authorize } from '../middleware/auth';
+import { UserRole } from '@stylehub/types';
 
 const router = Router();
 
@@ -108,7 +109,7 @@ router.patch('/:id/helpful', protect, async (req: Request, res: Response) => {
 });
 
 // GET /api/reviews/admin — all (admin only)
-router.get('/admin/all', async (req: Request, res: Response) => {
+router.get('/admin/all', protect, authorize(UserRole.Admin), async (req: Request, res: Response) => {
   try {
     const { approved, page = '1', limit = '20' } = req.query as Record<string,string>;
     const filter: Record<string,unknown> = {};
@@ -128,7 +129,7 @@ router.get('/admin/all', async (req: Request, res: Response) => {
 });
 
 // PATCH /api/reviews/:id/approve
-router.patch('/:id/approve', async (req: Request, res: Response) => {
+router.patch('/:id/approve', protect, authorize(UserRole.Admin), async (req: Request, res: Response) => {
   const { approved, adminNote } = req.body as { approved: boolean; adminNote?: string };
   try {
     const review = await Review.findByIdAndUpdate(

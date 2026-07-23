@@ -1,9 +1,16 @@
 import { Router, Request, Response } from 'express';
+import mongoose from 'mongoose';
 import Order from '../models/Order';
 import User from '../models/User';
 import Vendor from '../models/Vendor';
+import Product from '../models/Product';
+import { protect, authorize } from '../middleware/auth';
+import { UserRole } from '@stylehub/types';
 
 const router = Router();
+
+// All analytics endpoints are admin-only
+router.use(protect, authorize(UserRole.Admin));
 
 const fmt = (n: number) => Math.round(n);
 
@@ -12,10 +19,10 @@ router.get('/overview', async (_req: Request, res: Response) => {
   try {
     const totalOrders = await Order.find({ status: { $ne: 'cancelled' } });
     const userCount   = await User.countDocuments();
-    const vendorCount = await Vendor.countDocuments();
+    const vendorCount = await Vendor.countDocuments({ status: 'approved' });
 
-    let revenueVal = 17213;
-    let ordersVal  = 5;
+    let revenueVal = 0;
+    let ordersVal  = 0;
 
     if (totalOrders.length > 0) {
       revenueVal = totalOrders.reduce((sum, o) => sum + (o.totals?.total || 0), 0);
@@ -26,21 +33,13 @@ router.get('/overview', async (_req: Request, res: Response) => {
       success: true,
       overview: {
         revenue:      { value: fmt(revenueVal), delta: 12.5 },
-        orders:       { value: ordersVal,      delta: 8.2 },
-        newCustomers: { value: userCount > 0 ? userCount : 5, delta: 14.1 },
-        activeVendors:{ value: vendorCount > 0 ? vendorCount : 5, delta: 4.5 },
+        orders:       { value: ordersVal,       delta: 8.2 },
+        newCustomers: { value: userCount,       delta: 14.1 },
+        activeVendors:{ value: vendorCount,     delta: 4.5 },
       },
     });
   } catch {
-    res.json({
-      success: true,
-      overview: {
-        revenue:      { value: 17213, delta: 12.5 },
-        orders:       { value: 5,     delta: 8.2 },
-        newCustomers: { value: 5,     delta: 14.1 },
-        activeVendors:{ value: 5,     delta: 4.5 },
-      },
-    });
+    res.status(500).json({ success: false, message: 'Failed to fetch overview.' });
   }
 });
 
@@ -48,33 +47,35 @@ router.get('/overview', async (_req: Request, res: Response) => {
 router.get('/revenue', async (req: Request, res: Response) => {
   try {
     const period = (req.query.period as string) ?? '30d';
+    let days = 30;
+    if (period === '7d') days = 7;
+    else if (period === '90d') days = 90;
 
-    let data: any[] = [];
-    if (period === '7d') {
-      data = [
-        { label: 'Mon', revenue: 3149, orders: 1 },
-        { label: 'Tue', revenue: 0,    orders: 0 },
-        { label: 'Wed', revenue: 7299, orders: 1 },
-        { label: 'Thu', revenue: 1665, orders: 1 },
-        { label: 'Fri', revenue: 5100, orders: 1 },
-        { label: 'Sat', revenue: 0,    orders: 0 },
-        { label: 'Sun', revenue: 0,    orders: 0 },
-      ];
-    } else if (period === '90d') {
-      data = [
-        { label: 'May 2026', revenue: 14500, orders: 4 },
-        { label: 'Jun 2026', revenue: 22800, orders: 7 },
-        { label: 'Jul 2026', revenue: 17213, orders: 5 },
-      ];
-    } else {
-      // 30d
-      data = [
-        { label: 'Wk 1 (Jul 1-7)',   revenue: 3149, orders: 1 },
-        { label: 'Wk 2 (Jul 8-14)',  revenue: 7299, orders: 1 },
-        { label: 'Wk 3 (Jul 15-21)', revenue: 6765, orders: 2 },
-        { label: 'Wk 4 (Jul 22-28)', revenue: 0,    orders: 1 },
-      ];
-    }
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const pipeline = await Order.aggregate([
+      { $match: { createdAt: { $gte: startDate }, status: { $ne: 'cancelled' } } },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: days <= 7 ? '%Y-%m-%d' : days <= 30 ? '%Y-W%V' : '%Y-%m',
+              date: '$createdAt',
+            },
+          },
+          revenue: { $sum: '$totals.total' },
+          orders:  { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const data = pipeline.map((p: { _id: string; revenue: number; orders: number }) => ({
+      label:   p._id,
+      revenue: fmt(p.revenue),
+      orders:  p.orders,
+    }));
 
     res.json({ success: true, period, data });
   } catch {
@@ -85,49 +86,81 @@ router.get('/revenue', async (req: Request, res: Response) => {
 // GET /api/analytics/categories
 router.get('/categories', async (_req: Request, res: Response) => {
   try {
-    res.json({
-      success: true,
-      categories: [
-        { name: 'Ethnic Wear',  revenue: 8649, orders: 2, pct: 50 },
-        { name: 'Footwear',     revenue: 7200, orders: 1, pct: 42 },
-        { name: 'Western Wear', revenue: 1665, orders: 1, pct: 8 },
-      ],
-    });
+    const pipeline = await Order.aggregate([
+      { $match: { status: { $ne: 'cancelled' } } },
+      { $unwind: '$fulfillments' },
+      { $unwind: '$fulfillments.items' },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'fulfillments.items.productId',
+          foreignField: '_id',
+          as: 'productInfo',
+        },
+      },
+      { $unwind: { path: '$productInfo', preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: '$productInfo.category',
+          revenue: { $sum: { $multiply: ['$fulfillments.items.price', '$fulfillments.items.quantity'] } },
+          orders: { $sum: 1 },
+        },
+      },
+      { $sort: { revenue: -1 } },
+    ]);
+
+    const totalRevenue = pipeline.reduce((s: number, p: { revenue: number }) => s + p.revenue, 0);
+    const categories = pipeline.map((p: { _id: string; revenue: number; orders: number }) => ({
+      name:    p._id ?? 'Uncategorised',
+      revenue: fmt(p.revenue),
+      orders:  p.orders,
+      pct:     totalRevenue > 0 ? Math.round((p.revenue / totalRevenue) * 100) : 0,
+    }));
+
+    res.json({ success: true, categories });
   } catch {
-    res.status(500).json({ success: false, message: 'Failed.' });
+    res.status(500).json({ success: false, message: 'Failed to fetch category analytics.' });
   }
 });
 
 // GET /api/analytics/top-products
 router.get('/top-products', async (_req: Request, res: Response) => {
   try {
-    res.json({
-      success: true,
-      products: [
-        { name: 'Handcrafted Leather Juttis', sales: 2, revenue: 7200 },
-        { name: 'Silk Blend Bandhgala Jacket', sales: 1, revenue: 5100 },
-        { name: 'Ivory Embroidered Anarkali Kurta', sales: 1, revenue: 3149 },
-        { name: 'Midnight Floral Maxi Dress', sales: 1, revenue: 1665 },
-      ],
-    });
+    const products = await Product.find({ status: 'active' })
+      .sort({ soldCount: -1 })
+      .limit(10)
+      .select('name soldCount basePrice')
+      .lean();
+
+    const result = products.map((p: any) => ({
+      name:    p.name,
+      sales:   p.soldCount || 0,
+      revenue: (p.soldCount || 0) * (p.basePrice || 0),
+    }));
+
+    res.json({ success: true, products: result });
   } catch {
-    res.status(500).json({ success: false, message: 'Failed.' });
+    res.status(500).json({ success: false, message: 'Failed to fetch top products.' });
   }
 });
 
 // GET /api/analytics/vendors
 router.get('/vendors', async (_req: Request, res: Response) => {
   try {
-    res.json({
-      success: true,
-      vendors: [
-        { name: 'SoleMate',     orders: 1, revenue: 7200, rating: 4.8 },
-        { name: 'EthnicVibe',   orders: 1, revenue: 5100, rating: 4.6 },
-        { name: 'DesiCouture',  orders: 1, revenue: 3149, rating: 4.7 },
-        { name: 'UrbanThreads', orders: 1, revenue: 1665, rating: 4.8 },
-        { name: 'StyleCraft',   orders: 0, revenue: 0,    rating: 4.5 },
-      ],
-    });
+    const vendors = await Vendor.find({ status: 'approved' })
+      .sort({ totalOrders: -1 })
+      .limit(10)
+      .select('storeName totalOrders totalEarnings storeRating')
+      .lean();
+
+    const result = vendors.map((v: any) => ({
+      name:    v.storeName,
+      orders:  v.totalOrders || 0,
+      revenue: v.totalEarnings || 0,
+      rating:  v.storeRating || 0,
+    }));
+
+    res.json({ success: true, vendors: result });
   } catch {
     res.status(500).json({ success: false, message: 'Failed to fetch vendor analytics.' });
   }
@@ -144,7 +177,7 @@ router.get('/enquiries', async (_req: Request, res: Response) => {
     stats.forEach((s: { _id: string; count: number }) => { map[s._id] = s.count; });
     res.json({ success: true, enquiries: map });
   } catch {
-    res.status(500).json({ success: false, message: 'Failed.' });
+    res.status(500).json({ success: false, message: 'Failed to fetch enquiry analytics.' });
   }
 });
 

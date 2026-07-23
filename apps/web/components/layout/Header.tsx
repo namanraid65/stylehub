@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, ShoppingBag, Heart, User, Menu, X } from "lucide-react";
+import { Search, ShoppingBag, Heart, User, Menu, X, Coins } from "lucide-react";
 import { useCartStore } from "@/lib/stores/cart.store";
 import { useWishlistStore } from "@/lib/stores/wishlist.store";
+import { useWalletStore } from "@/lib/stores/wallet.store";
 import NotificationBell from "@/components/notifications/NotificationBell";
-
 
 const NAV = [
   { label: "Men",          href: "/products?gender=men" },
@@ -28,6 +28,7 @@ export default function Header() {
 
   const cartCount     = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
   const wishlistCount = useWishlistStore((s) => s.ids.length);
+  const walletBalance = useWalletStore((s) => s.balance);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +85,8 @@ export default function Header() {
 
             {/* Actions */}
             <div className="flex items-center gap-2">
+
+
               {/* Search toggle */}
               <button
                 onClick={() => setSearch(!searchOpen)}
@@ -120,6 +123,7 @@ export default function Header() {
               <Link href="/account" className="hidden sm:flex p-2 rounded-full hover:bg-[var(--cream-dark)] transition-colors">
                 <User className="h-5 w-5 text-[var(--charcoal)]" />
               </Link>
+
 
               {/* Mobile hamburger */}
               <button

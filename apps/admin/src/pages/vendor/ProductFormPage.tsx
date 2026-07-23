@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
   Loader2, ArrowLeft, Info, Tag, Package, Palette,
-  FileText, CheckCircle2,
+  FileText, CheckCircle2, Sparkles
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -18,9 +18,11 @@ import { Switch } from '../../components/ui/switch';
 import { Badge } from '../../components/ui/badge';
 import ImageUploadZone from '../../components/vendor/ImageUploadZone';
 import VariantBuilder, { type VariantRow } from '../../components/vendor/VariantBuilder';
+import AiDescriptionGeneratorModal from '../../components/products/AiDescriptionGeneratorModal';
 import productApi from '../../api/product.api';
 import categoryApi from '../../api/category.api';
 import { cn } from '../../lib/utils';
+
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 const productSchema = z.object({
@@ -77,6 +79,7 @@ const ProductFormPage: React.FC<ProductFormPageProps> = ({ mode = 'create' }) =>
   const [loadingProduct, setLoadingProduct] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
   const [savedId, setSavedId]     = useState<string | null>(null);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
 
   const {
     register,
@@ -84,11 +87,13 @@ const ProductFormPage: React.FC<ProductFormPageProps> = ({ mode = 'create' }) =>
     control,
     watch,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema) as never,
     defaultValues: { status: 'draft' as const, isFeatured: false, gender: 'unisex' as const, minStockThreshold: 5 },
   });
+
 
   const basePrice = watch('basePrice') ?? 0;
 
@@ -288,9 +293,20 @@ const ProductFormPage: React.FC<ProductFormPageProps> = ({ mode = 'create' }) =>
 
                   {/* Description */}
                   <div className="sm:col-span-2 space-y-1.5">
-                    <Label htmlFor="description">Description *</Label>
+
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="description">Description *</Label>
+                      <button
+                        type="button"
+                        onClick={() => setAiModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 text-xs text-rose-600 font-semibold hover:text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 transition"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" /> Auto-Generate with AI
+                      </button>
+                    </div>
                     <Textarea id="description" rows={5} placeholder="Describe materials, fit, styling tips…" error={errors.description?.message} {...register('description')} />
                   </div>
+
 
                   {/* Brand */}
                   <div className="space-y-1.5">
@@ -580,8 +596,20 @@ const ProductFormPage: React.FC<ProductFormPageProps> = ({ mode = 'create' }) =>
           </TabsContent>
         </Tabs>
       </form>
+
+
+      <AiDescriptionGeneratorModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        onApply={(generatedText: string) => {
+          setValue('description', generatedText);
+        }}
+        productTitle={watch('name')}
+      />
+
     </div>
   );
 };
+
 
 export default ProductFormPage;

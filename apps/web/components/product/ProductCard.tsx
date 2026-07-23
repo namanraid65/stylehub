@@ -64,9 +64,13 @@ export default function ProductCard({ product }: { product: Product }) {
   }, []);
 
   const wished = mounted ? isWished(product.id) : false;
-  const discount = product.compareAtPrice
-    ? Math.round(((product.compareAtPrice - product.basePrice) / product.compareAtPrice) * 100)
+  const displayPrice = product.variants?.[0]?.price ?? product.basePrice;
+
+  const comparePrice = product.compareAtPrice || (displayPrice < product.basePrice ? product.basePrice : null);
+  const discount = comparePrice && comparePrice > displayPrice
+    ? Math.round(((comparePrice - displayPrice) / comparePrice) * 100)
     : null;
+
 
   const uniqueColors = [...new Set(product.variants.map((v) => v.colorHex))];
 
@@ -181,11 +185,12 @@ export default function ProductCard({ product }: { product: Product }) {
 
         {/* Price */}
         <div className="flex items-baseline gap-1.5 mb-1.5">
-          <Price amount={product.basePrice} className="text-base font-body font-semibold text-[var(--charcoal)]" />
-          {product.compareAtPrice && (
-            <Price amount={product.compareAtPrice} className="text-xs font-body text-[var(--muted)] line-through" />
+          <Price amount={displayPrice} className="text-base font-body font-semibold text-[var(--charcoal)]" />
+          {comparePrice && comparePrice > displayPrice && (
+            <Price amount={comparePrice} className="text-xs font-body text-[var(--muted)] line-through" />
           )}
         </div>
+
 
         {/* Amazon-style 5-star rating with half-star shading */}
         <div className="flex items-center gap-1">

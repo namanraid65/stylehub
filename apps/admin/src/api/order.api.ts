@@ -10,11 +10,24 @@ export interface OrderItem {
   price:    number;
 }
 
+export interface FulfillmentGroup {
+  vendorId:   string;
+  vendorName: string;
+  items:      { productId: string; name: string; sku: string; price: number; quantity: number; size: string; color: string }[];
+  subtotal:   number;
+  delivery:   number;
+  status:     string;
+}
+
 export interface Order {
   _id:             string;
   orderNumber:     string;
-  user:            { _id: string; name: string; email: string } | string;
-  items:           OrderItem[];
+  customer?:       string;
+  guestInfo?:      { name?: string; email?: string };
+  // Backward compat: some pages still reference user/items
+  user?:           { _id: string; name: string; email: string } | string;
+  items?:          OrderItem[];
+  fulfillments?:   FulfillmentGroup[];
   status:          OrderStatus;
   paymentMethod:   string;
   paymentStatus:   string;
@@ -22,12 +35,22 @@ export interface Order {
     fullName: string; phone: string; line1: string;
     city: string; state: string; pincode: string;
   };
+  totals?: {
+    subtotal: number;
+    discount: number;
+    tax:      number;
+    delivery: number;
+    total:    number;
+  };
+  coupon?:         { code: string; type: string; value: number };
   subtotal:        number;
   discount:        number;
   shippingFee:     number;
   total:           number;
   trackingNumber?: string;
   notes?:          string;
+  cancelReason?:   string;
+  returnReason?:   string;
   statusHistory:   { status: string; note?: string; updatedAt: string }[];
   createdAt:       string;
 }
@@ -63,9 +86,13 @@ const orderApi = {
   },
 
   getById: async (id: string) => {
-    const res = await apiClient.get<{ data: any }>(`/orders/${id}`);
-    if (res.data && res.data.data) {
-      res.data.data = mapOrder(res.data.data);
+    const res = await apiClient.get<{ order?: any; data?: any }>(`/orders/${id}`);
+    // API returns { success, order } not { success, data }
+    const orderObj = res.data?.order ?? res.data?.data;
+    if (orderObj) {
+      const mapped = mapOrder(orderObj);
+      (res.data as any).data = mapped;
+      res.data.order = mapped;
     }
     return res;
   },

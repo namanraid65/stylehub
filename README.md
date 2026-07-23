@@ -1,21 +1,63 @@
 # 🛍️ StyleHub — Multi-Vendor Fashion & Lifestyle Marketplace
 
-StyleHub is a premium, high-performance multi-vendor e-commerce platform built on a modern **MERN (MongoDB, Express, React/Next.js, Node.js)** monorepo stack. The system is designed specifically for fashion and lifestyle marketplaces, supporting multiple independent boutiques, cart-splitting across vendors, drag-and-drop CMS layout management, real-time analytics, verified customer reviews, interactive Q&As, and dynamically generated PDF invoices.
+![StyleHub Banner](https://img.shields.io/badge/StyleHub-E--Commerce%20Marketplace-C84B31?style=for-the-badge&logo=shopify&logoColor=white)
+![Stack](https://img.shields.io/badge/Stack-MERN%20Monorepo%20(Next.js%2015%20%7C%20Vite%20%7C%20Express%20%7C%20MongoDB)-111111?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+
+**StyleHub** is a premium, high-performance multi-vendor e-commerce platform built on a modern **MERN (MongoDB, Express, Next.js 15, Node.js)** monorepo architecture. Designed specifically for fashion, apparel, and boutique marketplace operations, StyleHub features real-time cloud synchronization, interactive garment zoom lenses, instant email billing, dynamic low-stock scarcity badges, Amazon/Myntra style sale campaign management, digital wallet rewards, scan & pay UPI simulation, and AI-powered boutique vendor tools.
+
+---
+
+## 🔥 Key Highlight Features
+
+### 🏷️ 1. Amazon & Myntra Style Sales & Discount Manager
+* **Admin & Vendor Sales Campaigns:** Launch platform-wide or store-specific sale events via the **Discounts & Promotions** dashboard (`/discounts`).
+* **Target Scopes:**
+  - **All Products:** Platform-wide or storewide percentage/flat discounts (*e.g., "Flat 20% OFF Everything"*).
+  - **By Category:** Target specific apparel/shoe categories (*e.g., "Ethnic Wear Sale"* or *"30% OFF Shoes"*).
+  - **Selected Products:** Apply custom deal badges to specific product IDs.
+* **Badges & Strikethroughs:** Automatically calculates sale prices, strikethrough original prices, and displays promotional badges (*"FESTIVE SALE 20% OFF"*).
+
+### ⚡ 2. Real-Time Customer Engagement & Order Tracking
+* **Flash Deal Countdown Banner (`FlashSaleBanner.tsx`):** Animated live countdown timer with stock scarcity progress bars (*"⚡ Only 16 items left in stock!"*).
+* **Live Package Order Tracker (`OrderTrackerStepper.tsx`):** Interactive shipment progress timeline (*Placed ➔ Packing ➔ Shipped ➔ Delivery*) with Awb tracking IDs in the customer account dashboard (`/account`).
+
+### 💳 3. StyleCoins Digital Wallet & Scan & Pay UPI
+* **StyleCoins Loyalty Wallet (`wallet.store.ts`):** Earn 5% cashback on purchases, view wallet balance in the header, and redeem balance at checkout for instant discounts.
+* **Scan & Pay UPI QR Gateway (`UpiQrModal.tsx`):** Dynamic UPI QR code modal (GPay, PhonePe, Paytm, BHIM) with a payment verification timer.
+
+### 🏪 4. AI Fashion Writer & Vendor Enterprise Tools
+* **AI Fashion Description Generator (`AiDescriptionGeneratorModal.tsx`):** One-click **"Auto-Generate with AI"** magic button in the Vendor Product form to write catchy, high-converting product descriptions and highlights.
+* **Bulk CSV Product Importer (`BulkProductCsvModal.tsx`):** Drag-and-drop CSV batch upload modal for vendors with sample CSV template downloads.
+* **Vendor Settlement Ledger (`VendorPayoutsPage.tsx`):** Dedicated payout ledger tracking gross sales, 10% platform commission deductions, and bank settlements.
+
+### 🔄 5. Automatic Cart & Wishlist Cloud Sync (`SyncObserver`)
+* **Cross-Device & Guest Sync:** Cart & wishlist items automatically persist across browser sessions using **Zustand** local storage and sync to MongoDB via `/api/cart/sync` and `/api/auth/wishlist/sync` upon login.
+
+### 🔍 6. Garment Image Magnification Lens (PDP Zoom)
+* **High-Precision Magnifier:** Product Detail Pages (PDP) feature a cursor-following zoom lens enabling buyers to inspect fine fabric textures, stitching details, and print quality.
+
+### ⚠️ 7. Low Stock & Scarcity Urgency Badges
+* **Dynamic Indicators:** Real-time stock alerts (*e.g., "⚡ Only 2 left in stock!"*) on product pages and variant selectors to prevent overselling.
+
+### 📧 8. Gmail & SMTP Email Invoicing ("Bill on Gmail")
+* **Automated Order Receipts:** Dispatches HTML order invoices directly to the customer's email address (*Gmail SMTP / Resend API*) upon checkout completion, complete with GST breakdown and downloadable PDF invoices (`@react-pdf/renderer`).
 
 ---
 
 ## 🏗️ Monorepo Architecture & Structure
 
-StyleHub is structured as a **Turborepo monorepo** managed with **pnpm workspaces** for maximum modularity, clean separation of concerns, and shared package caching:
+StyleHub is structured as a **Turborepo monorepo** using **pnpm workspaces**:
 
 ```text
-├── apps
-│   ├── api          # Express.js (TypeScript) backend server with RESTful API
-│   ├── admin        # Vite + React (TypeScript) dashboard for Admins & Vendors
-│   └── web          # Next.js 15 (App Router) storefront for Customer shopping
-├── packages
-│   ├── types        # Shared TypeScript interfaces & enums (roles, statuses)
-│   └── validators   # Shared Zod schemas (request bodies, form validations)
+stylehub/
+├── apps/
+│   ├── api/          # Express.js (TypeScript) REST API with MongoDB & Nodemailer/Resend
+│   ├── admin/        # Vite + React (TypeScript) + Tailwind Dashboard for Admins & Vendors
+│   └── web/          # Next.js 15 (App Router) Storefront for Customer Shopping
+└── packages/
+    ├── types/        # Shared TypeScript interfaces & enums (Order, Product, User, Cart)
+    └── validators/   # Shared Zod validation schemas (Auth, Orders, Products, Cart)
 ```
 
 ---
@@ -23,13 +65,12 @@ StyleHub is structured as a **Turborepo monorepo** managed with **pnpm workspace
 ## 🚀 Setup & Local Installation
 
 ### Prerequisites
-*   Node.js (v20 or higher)
-*   pnpm (v9 or higher) — install via `npm i -g pnpm`
-*   MongoDB Server (Local instance running on `mongodb://localhost:27017` or Atlas URI)
+* **Node.js:** v20.x or higher
+* **pnpm:** v9.x or higher (`npm i -g pnpm`)
+* **MongoDB:** Local instance on `mongodb://localhost:27017` or a MongoDB Atlas URI
 
-### Step 1: Clone and Install Dependencies
+### Step 1: Clone and Install
 ```bash
-# Clone the repository
 git clone https://github.com/namanraid65/stylehub.git
 cd stylehub
 
@@ -38,95 +79,39 @@ pnpm install
 ```
 
 ### Step 2: Configure Environment Variables
-Copy `.env.example` in the root directory to `.env`:
+Copy `.env.example` to `.env` in the root directory:
 ```bash
 cp .env.example .env
 ```
-Ensure the values are correct for your local setup:
-*   `MONGO_URI=mongodb://localhost:27017/stylehub`
-*   `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` set to secure strings.
 
-### Step 3: Seed Mock Data
-A seeding script is provided to pre-populate the database with categories, vendors, products with color/size variants, CMS pages, banners, and sample orders:
+### Step 3: Seed Database
+Populate the database with sample boutique vendors, multi-variant products, categories, CMS layouts, and discounts:
 ```bash
 pnpm --filter @stylehub/api db:seed
 ```
 
 ### Step 4: Run Development Servers
-Start the Express API server, Next.js storefront, and Vite Admin Panel concurrently:
+Start all applications concurrently:
 ```bash
 pnpm dev
 ```
-*   **Customer Storefront:** [http://localhost:3000](http://localhost:3000)
-*   **Admin/Vendor Panel:** [http://localhost:3001](http://localhost:3001)
-*   **Express API Server:** [http://localhost:5000](http://localhost:5000)
 
----
-
-## ☁️ Production Deployment
-
-For full cloud-deployment guides, step-by-step instructions, and variables configuration, please read our dedicated deployment manual:
-
-👉 **[DEPLOYMENT.md](file:///c:/Users/HP/coding/python/intership/finalproject/DEPLOYMENT.md)**
-
-It includes:
-*   **MongoDB Atlas** database setup and network whitelisting.
-*   **Railway & Render** hosting guides for the Express API server.
-*   **Vercel** setup for the Next.js Storefront and Vite Admin Panel.
-*   **Postman Collection** route schema mapping.
-
----
-
-## 💾 Database Indexing Strategy
-
-To guarantee optimal database performance during high-concurrency traffic, MongoDB indexes have been placed on critical query paths:
-
-1.  **Product Model:**
-    *   `{ vendor: 1, status: 1 }`: For fast vendor-catalog retrieval.
-    *   `{ category: 1, status: 1, createdAt: -1 }`: Optimizes catalog browsing and category filters.
-    *   `{ status: 1, isFeatured: 1 }`: Accelerates homepage product marquee rendering.
-    *   Text Index `{ name: 'text', brand: 'text', description: 'text', tags: 'text' }`: Empowers full-text search with relative weights.
-2.  **Order Model:**
-    *   `{ orderNumber: 1 }` (Unique): For fast lookup of individual order tracking details.
-    *   `{ customer: 1, createdAt: -1 }`: Optimizes customer order history loading.
-    *   `{ 'fulfillments.vendorId': 1 }`: Allows vendors to pull their specific sub-orders quickly.
-3.  **Review & Q&A Models:**
-    *   `{ product: 1, isApproved: 1, createdAt: -1 }` (Reviews): Speeds up review loading on PDPs.
-    *   `{ product: 1, customer: 1, order: 1 }` (Unique): Restricts customers to one review per purchased item.
+* 🛍️ **Customer Storefront:** [http://localhost:3000](http://localhost:3000)
+* 💼 **Admin & Vendor Dashboard:** [http://localhost:3001](http://localhost:3001)
+* ⚙️ **Express API Server:** [http://localhost:5000](http://localhost:5000)
 
 ---
 
 ## 🔑 Demo Evaluation Credentials
 
-Use these credentials to log in and evaluate different roles:
-
-*   **System Administrator:**
-    *   **Email:** `admin@stylehub.in`
-    *   **Password:** `password123`
-    *   *Access:* Can moderate reviews, edit CMS blocks, approve vendors, inspect platform-wide logs, and view consolidated analytics.
-*   **Vendor Store Manager:**
-    *   **Email:** `vendor@desicouture.in`
-    *   **Password:** `password123`
-    *   *Access:* Can manage inventory, update variant stocks, view store-specific order fulfillment splits, and respond to buyer enquiries.
-*   **Customer Guest Shopping:**
-    *   Add any item to the bag, click checkout, and input address and payment preferences (COD or Test Card). Order numbers are stored in local storage for account dashboard lookups.
+| Role | Email | Password | Access Capabilities |
+| :--- | :--- | :--- | :--- |
+| **System Admin** | `admin@stylehub.in` | `password123` | Create platform discount sales, moderate reviews, edit CMS, inspect analytics & platform settings. |
+| **Vendor Manager** | `vendor@desicouture.in` | `password123` | Create store sales, use AI description generator, import CSV products, manage inventory & payouts. |
+| **Customer Guest** | *Guest / Custom Signup* | *N/A* | Test flash sales, StyleCoins wallet, UPI QR code payment, order tracking, and image zoom lens. |
 
 ---
 
-## ✅ Feature Checklist
+## 📄 License
 
-### 🛍️ Customer Storefront (`apps/web`)
-*   **Rich Premium UI/UX:** Built with a curated cream/rose palette, elegant fonts, glassmorphism, micro-animations, and full responsive support for mobile devices.
-*   **Granular Catalog Filters:** Filter styles by category, brand, size, color, gender, and price range.
-*   **Robust Product Details (PDP):** Image galleries with lightboxes, color-swatch selection, size guides, real-time stock indicator updates, Q&A sections, and reviews.
-*   **Multi-Vendor Cart & Checkout:** Customers can buy from multiple vendors simultaneously. Payouts, taxes, and shipping rates are calculated and split per vendor dynamically.
-*   **Confetti Order Confirmation & Invoice:** Dynamically generated PDF invoices on the fly using `@react-pdf/renderer` showing exact ordered items and totals.
-*   **Zustand Persisted Stores:** Local state persistence for the cart, wishlist, address book, and notifications center.
-
-### 💼 Vendor & Admin Panel (`apps/admin`)
-*   **Real-Time Business Analytics:** Chart breakdowns of monthly revenues, sales distribution by order status, and top-selling products using Recharts.
-*   **Catalog & Inventory Control:** Vendors can create products, manage sizes/colors, set separate compare-at pricing, and update stock counts.
-*   **Order Fulfillment Dashboard:** Split-order tracking where each vendor manages their respective shipping/processing status independently.
-*   **Enquiry Management:** Inbox for vendors to read customer queries (quotes, bulk request forms, custom designs) and respond directly.
-*   **CMS Block Layout Editor:** Admins can configure the homepage layout and policies (terms, returns) dynamically using pre-built visual blocks.
-*   **Review & Q&A Moderation:** Admins approve/reject customer reviews and manage product Q&A publishing.
+This project is open-source and available under the [MIT License](LICENSE).

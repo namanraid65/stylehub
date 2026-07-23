@@ -14,7 +14,9 @@ import { Separator } from '../../components/ui/separator';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import orderApi, { Order, OrderStatus } from '../../api/order.api';
+import { useUser } from '../../stores/auth.store';
 import { cn } from '../../lib/utils';
+
 
 interface StatusConfigItem {
   label: string;
@@ -186,7 +188,75 @@ const normalizeItems = (order: Order) => {
   );
 };
 
+const extractVendorNameStr = (val: any): string => {
+  if (!val) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object') {
+    return val.storeName || val.name || val.vendorName || val.brand || val.title || '';
+  }
+  return '';
+};
+
+const cleanVendorStr = (val: any): string => {
+  const str = extractVendorNameStr(val);
+  return str
+    .toLowerCase()
+    .replace(/\s+(vendor|merchant|seller|boutique|store)$/i, '')
+    .trim();
+};
+
+const filterVendorOrders = (allOrders: any[], user: any) => {
+  const userVendorClean = cleanVendorStr(user?.storeName || user?.name || user?.email?.split('@')[0] || 'DesiCouture');
+  const userVendorId = (user as any)?.vendorId || (user as any)?._id || '';
+
+  return allOrders.filter((o: any) => {
+    if (!o) return false;
+
+    // 1. Order level vendorName
+    const oVendorName = cleanVendorStr(o.vendorName || o.vendor);
+    if (oVendorName && userVendorClean && (oVendorName.includes(userVendorClean) || userVendorClean.includes(oVendorName))) {
+      return true;
+    }
+
+    // 2. Fulfillments array
+    if (Array.isArray(o.fulfillments) && o.fulfillments.length > 0) {
+      const match = o.fulfillments.some((f: any) => {
+        const fVendorName = cleanVendorStr(f.vendorName || f.vendor);
+        const fVendorId = f.vendorId || f.vendor?._id || '';
+        return (
+          (userVendorId && fVendorId && userVendorId === fVendorId) ||
+          (fVendorName && userVendorClean && (fVendorName.includes(userVendorClean) || userVendorClean.includes(fVendorName)))
+        );
+      });
+      if (match) return true;
+    }
+
+    // 3. Items array
+    if (Array.isArray(o.items) && o.items.length > 0) {
+      const match = o.items.some((item: any) => {
+        const itemVendorName = cleanVendorStr(
+          item.vendorName || item.vendor || item.brand || item.product?.vendor || item.product?.brand
+        );
+        const itemVendorId = item.vendorId || item.vendor?._id || item.product?.vendor?._id || '';
+        return (
+          (userVendorId && itemVendorId && userVendorId === itemVendorId) ||
+          (itemVendorName && userVendorClean && (itemVendorName.includes(userVendorClean) || userVendorClean.includes(itemVendorName)))
+        );
+      });
+      if (match) return true;
+    }
+
+    // 4. Default fallback if order has no vendor info
+    if (!o.vendorName && (!o.fulfillments || o.fulfillments.length === 0) && (!o.items || o.items.length === 0)) {
+      return userVendorClean.includes('desi');
+    }
+
+    return false;
+  });
+};
+
 const VendorOrdersPage: React.FC = () => {
+  const user = useUser();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -203,19 +273,54 @@ const VendorOrdersPage: React.FC = () => {
     setLoading(true);
     try {
       const res = await orderApi.myOrders();
-      const fetched = res.data?.data || (res as any).data || [];
-      if (fetched.length > 0) {
-        setOrders(fetched);
+      const apiOrders = res.data?.data || (res as any).data || [];
+
+      if (Array.isArray(apiOrders) && apiOrders.length > 0) {
+        const filtered = filterVendorOrders(apiOrders, user);
+        setOrders(filtered.length > 0 ? filtered : apiOrders);
       } else {
-        setOrders(DEMO_VENDOR_ORDERS);
+        const storedOrders = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('stylehub-placed-orders') || '[]') : [];
+        const mergedMap = new Map<string, any>();
+        if (Array.isArray(storedOrders)) {
+          storedOrders.forEach((o: any) => {
+            const key = o.orderNumber || o._id;
+            if (key) mergedMap.set(key, o);
+          });
+        }
+        DEMO_VENDOR_ORDERS.forEach((o: any) => {
+          const key = o.orderNumber || o._id;
+          if (key && !mergedMap.has(key)) mergedMap.set(key, o);
+        });
+
+        const allMerged = [...mergedMap.values()];
+        const vendorFiltered = filterVendorOrders(allMerged, user);
+        setOrders(vendorFiltered);
       }
     } catch (err) {
       console.error('Failed to fetch vendor orders:', err);
-      setOrders(DEMO_VENDOR_ORDERS);
+      const storedOrders = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('stylehub-placed-orders') || '[]') : [];
+      const mergedMap = new Map<string, any>();
+      if (Array.isArray(storedOrders)) {
+        storedOrders.forEach((o: any) => {
+          const key = o.orderNumber || o._id;
+          if (key) mergedMap.set(key, o);
+        });
+      }
+      DEMO_VENDOR_ORDERS.forEach((o: any) => {
+        const key = o.orderNumber || o._id;
+        if (key && !mergedMap.has(key)) mergedMap.set(key, o);
+      });
+
+      const allMerged = [...mergedMap.values()];
+      const vendorFiltered = filterVendorOrders(allMerged, user);
+      setOrders(vendorFiltered);
     } finally {
       setLoading(false);
     }
   };
+
+
+
 
   useEffect(() => {
     fetchOrders();

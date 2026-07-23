@@ -929,7 +929,7 @@ router.post('/:id/cancel', optionalAuth, async (req: Request, res: Response) => 
         if (variant) {
           variant.stock += item.quantity;
         }
-        product.totalStock = product.variants.reduce((sum: number, v: any) => sum + v.stock, 0);
+        product.totalStock = product.variants.reduce((sum: number, v: any) => sum + (v.isActive !== false ? v.stock : 0), 0);
         product.soldCount = Math.max(0, (product.soldCount || 0) - item.quantity);
         await product.save();
       }
@@ -988,7 +988,7 @@ router.post('/:id/return', optionalAuth, async (req: Request, res: Response) => 
         if (variant) {
           variant.stock += item.quantity;
         }
-        product.totalStock = product.variants.reduce((sum: number, v: any) => sum + v.stock, 0);
+        product.totalStock = product.variants.reduce((sum: number, v: any) => sum + (v.isActive !== false ? v.stock : 0), 0);
         product.soldCount = Math.max(0, (product.soldCount || 0) - item.quantity);
         await product.save();
       }

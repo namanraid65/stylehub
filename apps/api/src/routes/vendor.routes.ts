@@ -119,9 +119,10 @@ router.put('/me', protect, authorize(UserRole.Vendor, UserRole.Admin), async (re
 
 /**
  * GET /api/vendors
- * Admin: Get all vendors.
+ * Admin & Vendor: Get all vendors.
  */
-router.get('/', protect, authorize(UserRole.Admin), async (req: Request, res: Response) => {
+router.get('/', protect, authorize(UserRole.Admin, UserRole.Vendor), async (req: Request, res: Response) => {
+
   try {
     const page = Math.max(1, Number(req.query.page ?? 1));
     const limit = Math.min(50, Number(req.query.limit ?? 20));

@@ -12,6 +12,15 @@ import {
   XCircle,
   Truck,
   Loader2,
+  AlertTriangle,
+  Zap,
+  Tag,
+  DollarSign,
+  Building2,
+  Sparkles,
+  ExternalLink,
+  ShieldCheck,
+  Award,
 } from 'lucide-react';
 import orderApi from '../../api/order.api';
 import productApi from '../../api/product.api';
@@ -82,17 +91,6 @@ const DEMO_RECENT_ORDERS = [
     vendorName: 'EthnicVibe',
     createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
   },
-  {
-    _id: 'ord-005',
-    orderNumber: 'SH-2026-00043',
-    user: { _id: 'u5', name: 'Neha Agarwal', email: 'neha.agarwal@example.com' },
-    status: 'cancelled',
-    paymentMethod: 'card',
-    paymentStatus: 'refunded',
-    total: 1089,
-    vendorName: 'StyleCraft',
-    createdAt: new Date(Date.now() - 4 * 86400000).toISOString(),
-  },
 ];
 
 const DEFAULT_VENDORS = [
@@ -103,19 +101,55 @@ const DEFAULT_VENDORS = [
   { name: 'StyleCraft',   orders: 0, revenue: 0,    rating: 4.5 },
 ];
 
-// ─── Stat card ────────────────────────────────────────────────────────────────
+const getMergedDashboardOrders = (apiOrders: any[]) => {
+  if (Array.isArray(apiOrders) && apiOrders.length > 0) {
+    return apiOrders;
+  }
+  const storedOrders = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('stylehub-placed-orders') || '[]') : [];
+  const mergedMap = new Map<string, any>();
+
+  if (Array.isArray(storedOrders)) {
+    storedOrders.forEach((o: any) => {
+      const key = o.orderNumber || o._id;
+      if (key) mergedMap.set(key, o);
+    });
+  }
+  DEMO_RECENT_ORDERS.forEach((o: any) => {
+    const key = o.orderNumber || o._id;
+    if (key && !mergedMap.has(key)) mergedMap.set(key, o);
+  });
+
+  return [...mergedMap.values()];
+};
+
+
+const ORDER_STATUS_COLORS: Record<string, string> = {
+  delivered: '#22c55e',
+  shipped: '#3b82f6',
+  processing: '#a855f7',
+  placed: '#f59e0b',
+  cancelled: '#ef4444',
+};
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  delivered: 'Delivered',
+  shipped: 'Shipped',
+  processing: 'Processing',
+  placed: 'Placed',
+  cancelled: 'Cancelled',
+};
+
+// ─── Stat Card Component ──────────────────────────────────────────────────────
 interface StatCardProps {
   title:     string;
   value:     string;
-  change:    number;
+  change?:   number;
   icon:      React.ElementType;
   gradient:  string;
   subtitle?: string;
 }
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, change, icon: Icon, gradient, subtitle }) => {
-  const isPositive = change >= 0;
-
   return (
     <Card className="relative overflow-hidden group hover:shadow-md transition-shadow duration-200">
       <CardContent className="p-6">
@@ -131,15 +165,15 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, change, icon: Icon, g
           </div>
         </div>
 
-        <div className={cn(
-          'mt-4 flex items-center gap-1.5 text-xs font-medium',
-          isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400',
-        )}>
-          {isPositive
-            ? <TrendingUp className="h-3.5 w-3.5" />
-            : <TrendingDown className="h-3.5 w-3.5" />}
-          <span>{Math.abs(change)}% vs last month</span>
-        </div>
+        {change !== undefined && (
+          <div className={cn(
+            'mt-4 flex items-center gap-1.5 text-xs font-medium',
+            change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400',
+          )}>
+            {change >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+            <span>{Math.abs(change)}% vs last month</span>
+          </div>
+        )}
       </CardContent>
 
       <div className={cn('absolute bottom-0 left-0 right-0 h-0.5 opacity-60', gradient)} />
@@ -147,203 +181,423 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, change, icon: Icon, g
   );
 };
 
-// ─── Order status icon ────────────────────────────────────────────────────────
-const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warning' | 'info' | 'destructive' | 'secondary'; icon: React.ElementType }> = {
-  delivered:  { label: 'Delivered',  variant: 'success',     icon: CheckCircle2 },
-  shipped:    { label: 'Shipped',    variant: 'info',        icon: Truck },
-  processing: { label: 'Processing', variant: 'warning',     icon: Clock },
-  placed:     { label: 'Placed',     variant: 'secondary',   icon: ShoppingCart },
-  cancelled:  { label: 'Cancelled',  variant: 'destructive', icon: XCircle },
-};
 
-// ─── Dashboard Page ───────────────────────────────────────────────────────────
-const DashboardPage: React.FC = () => {
+// ─── Main Dashboard Page (Routes by Role) ─────────────────────────────────────
+export default function DashboardPage() {
   const user = useUser();
-  const navigate = useNavigate();
+  const isVendor = user?.role === 'vendor';
 
+  if (isVendor) {
+    return <VendorDashboard user={user} />;
+  }
+
+  return <AdminDashboard user={user} />;
+}
+
+// ==============================================================================
+// 🏪 VENDOR MERCHANT DASHBOARD
+// ==============================================================================
+function VendorDashboard({ user }: { user: any }) {
+  const navigate = useNavigate();
+  const [loading, setLoading] = React.useState(true);
+  const [stats, setStats] = React.useState({
+    totalEarnings: 0,
+    totalOrders: 0,
+    activeProducts: 0,
+    pendingShipments: 0,
+  });
+  const [vendorOrders, setVendorOrders] = React.useState<any[]>([]);
+  const [lowStockItems, setLowStockItems] = React.useState<any[]>([]);
+  const [topPerformers, setTopPerformers] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    const loadVendorData = async () => {
+      setLoading(true);
+      try {
+        const [ordersRes, prodsRes] = await Promise.all([
+          orderApi.myOrders({ limit: 500 }).catch(() => null),
+          productApi.myProducts({ limit: 100 }).catch(() => productApi.list({ limit: 100 }).catch(() => null)),
+        ]);
+
+        const vendorStoreName = user?.storeName || user?.name || 'DesiCouture';
+        const rawOrdersAll = ordersRes?.data?.data || (ordersRes as any)?.data || [];
+        const mergedOrders = getMergedDashboardOrders(rawOrdersAll);
+
+        // Filter orders strictly for this vendor
+        const rawOrders = mergedOrders.filter((o: any) => {
+          if (!o) return false;
+          if (o.vendorName) {
+            return o.vendorName.toLowerCase() === vendorStoreName.toLowerCase() ||
+                   o.vendorName.toLowerCase().includes(vendorStoreName.toLowerCase()) ||
+                   vendorStoreName.toLowerCase().includes(o.vendorName.toLowerCase());
+          }
+          if (o.fulfillments && Array.isArray(o.fulfillments)) {
+            return o.fulfillments.some((f: any) =>
+              (f.vendorName && f.vendorName.toLowerCase().includes(vendorStoreName.toLowerCase())) ||
+              (f.vendorId && user?.vendorId && f.vendorId === user.vendorId)
+            );
+          }
+          return true;
+        });
+
+        const validOrders = rawOrders.filter((o: any) => o.status !== 'cancelled');
+        const computedRevenue = validOrders.reduce((sum: number, o: any) => sum + (o.total || o.totals?.total || 0), 0);
+        const pendingCount = rawOrders.filter((o: any) => ['placed', 'processing'].includes(o.status)).length;
+
+        const fetchedProds = (prodsRes as any)?.data?.data || (prodsRes as any)?.data || [];
+
+        const cleanVendor = (name: string) =>
+          (name || '')
+            .toLowerCase()
+            .replace(/\s+(vendor|merchant|seller|boutique|store)$/i, '')
+            .trim();
+
+        const userVendorClean = cleanVendor(user?.storeName || user?.name || user?.email?.split('@')[0] || 'VelveteenRose');
+        const vId = user?.vendorId || user?._id || '';
+
+        let rawProds = Array.isArray(fetchedProds) ? fetchedProds : [];
+        if (rawProds.length > 0) {
+          const filtered = rawProds.filter((p: any) => {
+            if (!p) return false;
+            const pV = cleanVendor(p.vendor?.storeName || p.vendor?.name || p.vendor || p.brand || p.vendorName || '');
+            const pId = p.vendor?._id || p.vendorId || '';
+            if (vId && pId && vId === pId) return true;
+            if (pV && userVendorClean && (pV.includes(userVendorClean) || userVendorClean.includes(pV))) return true;
+            return false;
+          });
+          if (filtered.length > 0) {
+            rawProds = filtered;
+          }
+        }
+
+
+        const lowStock = rawProds.filter((p: any) => {
+          const totalStock = p.variants ? p.variants.reduce((s: number, v: any) => s + (v.stock || 0), 0) : (p.totalStock || 0);
+          return totalStock > 0 && totalStock <= 10;
+        });
+
+        const sortedProds = [...rawProds].sort((a: any, b: any) => (b.soldCount || 0) - (a.soldCount || 0));
+        const computedTop = sortedProds.slice(0, 3).map((p: any) => {
+          const price = p.basePrice || p.price || 2499;
+          const sold = p.soldCount || (p.variants ? p.variants.reduce((s: number, v: any) => s + (v.stock || 0), 0) : 15);
+          return {
+            name: p.name,
+            sold,
+            revenue: price * sold,
+          };
+        });
+
+        setTopPerformers(computedTop);
+
+        const commRate = typeof window !== 'undefined' ? Number(localStorage.getItem('stylehub_platform_commission') || 12) : 12;
+
+        setStats({
+          totalEarnings: Math.round(computedRevenue * (1 - commRate / 100)), // Net after commission fee
+          totalOrders: rawOrders.length,
+          activeProducts: rawProds.length,
+          pendingShipments: pendingCount,
+        });
+
+
+        setVendorOrders(rawOrders);
+        setLowStockItems(lowStock.slice(0, 3));
+
+
+      } catch (err) {
+        console.error("Vendor dashboard data load failed:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadVendorData();
+  }, []);
+
+
+  if (loading) {
+    return (
+      <div className="flex h-full min-h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-rose-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Merchant Header Banner */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-neutral-900 via-rose-950 to-neutral-900 text-white rounded-2xl p-6 shadow-xl border border-rose-900/30">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 text-xs font-semibold uppercase tracking-wider border border-rose-500/30">
+              <ShieldCheck className="w-3.5 h-3.5 text-rose-400" />
+              Verified Boutique Seller
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold font-serif">
+              Welcome, {user?.name || 'Vendor Partner'} 🛍️
+            </h1>
+            <p className="text-neutral-300 text-sm">
+              Manage your boutique catalog, track customer orders, and view settlement ledgers.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => navigate('/vendor/products/new')}
+              className="bg-rose-600 hover:bg-rose-500 text-white font-medium shadow-lg hover:shadow-rose-600/30"
+            >
+              + Add New Product
+            </Button>
+            <Button
+              onClick={() => navigate('/vendor/payouts')}
+              variant="outline"
+              className="border-rose-900/50 bg-rose-950/60 text-rose-100 hover:bg-rose-900/80 hover:text-white"
+            >
+              Payout Ledger
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Vendor Key Metric Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          title={`Net Earnings (After ${typeof window !== 'undefined' ? Number(localStorage.getItem('stylehub_platform_commission') || 12) : 12}% Fee)`}
+          value={`₹${stats.totalEarnings.toLocaleString('en-IN')}`}
+          icon={IndianRupee}
+          gradient="bg-gradient-to-br from-emerald-600 to-teal-700"
+          subtitle="Ready for settlement"
+        />
+
+        <StatCard
+          title="Boutique Orders"
+          value={stats.totalOrders.toLocaleString('en-IN')}
+          icon={ShoppingCart}
+          gradient="bg-gradient-to-br from-blue-600 to-indigo-700"
+          subtitle="Received customer orders"
+        />
+        <StatCard
+          title="Active Listings"
+          value={stats.activeProducts.toLocaleString('en-IN')}
+          icon={Package}
+          gradient="bg-gradient-to-br from-rose-600 to-pink-700"
+          subtitle="Live on StyleHub"
+        />
+        <StatCard
+          title="Pending Fulfillment"
+          value={stats.pendingShipments.toLocaleString('en-IN')}
+          icon={Truck}
+          gradient="bg-gradient-to-br from-amber-600 to-orange-700"
+          subtitle="Needs packing & dispatch"
+        />
+      </div>
+
+
+      {/* Low Stock Warning Alert */}
+      {lowStockItems.length > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0" />
+            <div>
+              <h3 className="text-sm font-bold text-amber-900 dark:text-amber-300">Low Inventory Restock Alert</h3>
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                You have {lowStockItems.length} products with under 10 items left in stock. Re-stock to avoid missing sales!
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => navigate('/vendor/products')}
+            className="bg-amber-600 hover:bg-amber-700 text-white shrink-0 text-xs"
+          >
+            Restock Now
+          </Button>
+        </div>
+      )}
+
+      {/* Actionable Orders Needing Dispatch */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Action Center — Customer Orders</CardTitle>
+              <CardDescription>Recent orders placed for your boutique</CardDescription>
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => navigate('/vendor/orders')}>
+              View All Orders <ArrowRight className="w-4 h-4 ml-1" />
+            </Button>
+          </CardHeader>
+          <CardContent className="p-0">
+            {vendorOrders.length === 0 ? (
+              <div className="p-8 text-center space-y-2">
+                <Package className="w-10 h-10 text-muted-foreground/40 mx-auto" />
+                <p className="text-sm font-semibold text-foreground">No Customer Orders Yet</p>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  When customers purchase your boutique items on StyleHub, their orders will appear here for fulfillment.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {vendorOrders.slice(0, 5).map((order) => (
+                  <div key={order._id} className="p-4 flex items-center justify-between hover:bg-muted/30 transition">
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-bold">{order.orderNumber}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Customer: {typeof order.user === 'object' ? order.user?.name : 'Guest'} · {new Date(order.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge variant={order.status === 'delivered' ? 'success' : 'warning'} className="capitalize">
+                        {order.status}
+                      </Badge>
+                      <span className="text-sm font-bold text-rose-600">₹{order.total?.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Top Performing Garments in Boutique */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <Award className="w-5 h-5 text-amber-500" />
+              Boutique Top Performers
+            </CardTitle>
+            <CardDescription>Your best selling catalog items</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {topPerformers.length === 0 ? (
+              <div className="text-center py-6 space-y-2">
+                <Award className="w-10 h-10 text-muted-foreground/40 mx-auto" />
+                <p className="text-sm font-semibold text-foreground">No Top Performers Yet</p>
+                <p className="text-xs text-muted-foreground">
+                  Your best-selling catalog items will be highlighted here as sales come in.
+                </p>
+              </div>
+            ) : (
+              topPerformers.map((prod, i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/40">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-foreground line-clamp-1">{prod.name}</p>
+                    <p className="text-[11px] text-muted-foreground">{prod.sold} units sold</p>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-600">₹{prod.revenue.toLocaleString('en-IN')}</span>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+
+// ==============================================================================
+// 🛡️ ADMIN ENTERPRISE DASHBOARD
+// ==============================================================================
+function AdminDashboard({ user }: { user: any }) {
+  const navigate = useNavigate();
   const [timeframe, setTimeframe] = React.useState<Timeframe>('30d');
+  const [loading, setLoading] = React.useState(true);
   const [stats, setStats] = React.useState({
     totalRevenue: 0,
     totalOrders: 0,
     activeProducts: 0,
-    secondaryMetric: 0,
+    activeVendors: 0,
   });
   const [recentOrders, setRecentOrders] = React.useState<any[]>([]);
   const [statusDistribution, setStatusDistribution] = React.useState<any[]>([]);
   const [monthlyRevenue, setMonthlyRevenue] = React.useState<any[]>([]);
   const [topVendors, setTopVendors] = React.useState<any[]>([]);
-  const [topProducts, setTopProducts] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const loadDashboardData = async () => {
+    const loadAdminData = async () => {
       setLoading(true);
       try {
-        const isVendorRole = user?.role === 'vendor';
-
-        const [ordersRes, productsRes, vendorsRes] = await Promise.all([
-          isVendorRole ? orderApi.myOrders({ limit: 10 }).catch(() => null) : orderApi.allOrders({ limit: 10 }).catch(() => null),
+        const [ordersRes, prodsRes, vendorsRes] = await Promise.all([
+          orderApi.allOrders({ limit: 500 }).catch(() => null),
           productApi.list({ limit: 100 }).catch(() => null),
           vendorApi.getAllVendors().catch(() => null),
         ]);
 
-        const rawOrders = ordersRes?.data?.data || (ordersRes as any)?.data || [];
-        const activeOrders = rawOrders.length > 0 ? rawOrders : DEMO_RECENT_ORDERS;
-
-        const rawProducts = productsRes?.data?.data || (productsRes as any)?.data || [];
-        const prodCount = rawProducts.length > 0 ? rawProducts.length : 65;
-
+        const apiOrders = ordersRes?.data?.data || (ordersRes as any)?.data || [];
+        const rawOrders = getMergedDashboardOrders(apiOrders);
+        const rawProds = prodsRes?.data?.data || (prodsRes as any)?.data || [];
         const rawVendors = vendorsRes?.data?.data || (vendorsRes as any)?.data || [];
-        const vendorCount = rawVendors.length > 0 ? rawVendors.length : 5;
 
-        // Calculate exact mathematical revenue & order metrics from activeOrders
-        const validOrders = activeOrders.filter((o: any) => o.status !== 'cancelled');
-        const computedRevenue = validOrders.reduce((sum: number, o: any) => sum + (o.total || 0), 0);
-        const computedOrdersCount = activeOrders.length;
-        const pendingCount = activeOrders.filter((o: any) => ['placed', 'confirmed', 'processing'].includes(o.status)).length;
+        const validOrders = rawOrders.filter((o: any) => o.status !== 'cancelled');
+        const computedRevenue = validOrders.reduce((sum: number, o: any) => sum + (o.total || o.totals?.total || 0), 0);
 
         setStats({
           totalRevenue: computedRevenue,
-          totalOrders: computedOrdersCount,
-          activeProducts: prodCount,
-          secondaryMetric: isVendorRole ? pendingCount : vendorCount,
+          totalOrders: rawOrders.length,
+          activeProducts: Array.isArray(rawProds) && rawProds.length > 0 ? rawProds.length : 65,
+          activeVendors: Array.isArray(rawVendors) && rawVendors.length > 0 ? rawVendors.length : 5,
         });
 
-        // Compute exact status distribution matching actual orders
+        // Compute order status distribution
         const statusMap: Record<string, number> = {};
-        activeOrders.forEach((o: any) => {
+        rawOrders.forEach((o: any) => {
           statusMap[o.status] = (statusMap[o.status] || 0) + 1;
         });
 
-        const computedStatusDist = Object.entries(statusMap).map(([name, count]) => ({
+        const dist = Object.entries(statusMap).map(([name, count]) => ({
           name,
-          value: Math.round((count / activeOrders.length) * 100),
+          value: rawOrders.length > 0 ? Math.round((count / rawOrders.length) * 100) : 0,
         }));
-        setStatusDistribution(computedStatusDist);
+        setStatusDistribution(dist);
 
-        // Compute revenue chart points dynamically based on timeframe
-        let chartPoints: any[] = [];
-        if (timeframe === '7d') {
-          chartPoints = [
-            { month: 'Mon', revenue: 0, orders: 0 },
-            { month: 'Tue', revenue: 3149, orders: 1 },
-            { month: 'Wed', revenue: 1665, orders: 1 },
-            { month: 'Thu', revenue: 7299, orders: 1 },
-            { month: 'Fri', revenue: 5100, orders: 1 },
-            { month: 'Sat', revenue: 0, orders: 0 },
-            { month: 'Sun', revenue: 0, orders: 0 },
-          ];
-        } else if (timeframe === '90d') {
-          chartPoints = [
-            { month: 'May', revenue: 14500, orders: 4 },
-            { month: 'Jun', revenue: 22800, orders: 7 },
-            { month: 'Jul', revenue: computedRevenue, orders: activeOrders.length },
-          ];
-        } else if (timeframe === '1y') {
-          chartPoints = [
-            { month: 'Jan', revenue: 12000, orders: 3 },
-            { month: 'Feb', revenue: 18000, orders: 4 },
-            { month: 'Mar', revenue: 15000, orders: 3 },
-            { month: 'Apr', revenue: 22000, orders: 5 },
-            { month: 'May', revenue: 19000, orders: 4 },
-            { month: 'Jun', revenue: 25000, orders: 6 },
-            { month: 'Jul', revenue: computedRevenue, orders: activeOrders.length },
-          ];
-        } else {
-          // 30d
-          chartPoints = [
-            { month: 'Wk 1', revenue: 3149, orders: 1 },
-            { month: 'Wk 2', revenue: 7299, orders: 1 },
-            { month: 'Wk 3', revenue: 1665, orders: 1 },
-            { month: 'Wk 4', revenue: 5100, orders: 1 },
-          ];
-        }
-        setMonthlyRevenue(chartPoints);
-
-        // Compute vendor revenue dynamically from activeOrders
-        const vMap: Record<string, { orders: number; revenue: number; rating: number }> = {
-          'SoleMate': { orders: 0, revenue: 0, rating: 4.8 },
-          'EthnicVibe': { orders: 0, revenue: 0, rating: 4.6 },
-          'DesiCouture': { orders: 0, revenue: 0, rating: 4.7 },
-          'UrbanThreads': { orders: 0, revenue: 0, rating: 4.8 },
-          'StyleCraft': { orders: 0, revenue: 0, rating: 4.5 },
+        // Compute dynamic weekly revenue chart points from valid orders
+        const weeksMap: Record<string, { revenue: number; orders: number }> = {
+          'Wk 1': { revenue: 0, orders: 0 },
+          'Wk 2': { revenue: 0, orders: 0 },
+          'Wk 3': { revenue: 0, orders: 0 },
+          'Wk 4': { revenue: 0, orders: 0 },
         };
 
-        activeOrders.forEach((o: any) => {
-          if (o.status === 'cancelled') return;
-          const vName = o.vendorName || (o.orderNumber === 'SH-2026-00047' ? 'DesiCouture' : o.orderNumber === 'SH-2026-00046' ? 'SoleMate' : o.orderNumber === 'SH-2026-00045' ? 'UrbanThreads' : 'EthnicVibe');
-          if (!vMap[vName]) {
-            vMap[vName] = { orders: 0, revenue: 0, rating: 4.6 };
-          }
-          vMap[vName].orders += 1;
-          vMap[vName].revenue += (o.total || 0);
-        });
+        if (validOrders.length > 0) {
+          validOrders.forEach((o: any, idx: number) => {
+            const weekKey = `Wk ${(idx % 4) + 1}`;
+            const amt = o.total || o.totals?.total || 0;
+            if (weeksMap[weekKey]) {
+              weeksMap[weekKey]!.revenue += amt;
+              weeksMap[weekKey]!.orders += 1;
+            }
+          });
+        }
 
-        const sortedVendors = Object.entries(vMap)
-          .map(([name, data]) => ({ name, ...data }))
-          .sort((a, b) => b.revenue - a.revenue);
+        const dynamicRevenuePoints = Object.entries(weeksMap).map(([month, data]) => ({
+          month,
+          revenue: data.revenue,
+          orders: data.orders,
+        }));
 
-        setTopVendors(sortedVendors);
-        setRecentOrders(activeOrders.slice(0, 5));
+        setMonthlyRevenue(dynamicRevenuePoints);
+
+        setRecentOrders(rawOrders.slice(0, 5));
+
+        const computedTopVendors = Array.isArray(rawVendors) && rawVendors.length > 0
+          ? rawVendors
+              .map((v: any) => ({
+                name: v.storeName || v.name || 'Boutique Vendor',
+                orders: v.totalOrders || 0,
+                revenue: v.totalEarnings || v.totalSales || 0,
+                rating: v.storeRating || 4.8,
+              }))
+              .sort((a, b) => b.revenue - a.revenue)
+          : DEFAULT_VENDORS;
+
+        setTopVendors(computedTopVendors);
       } catch (err) {
-        console.error('Failed to load dashboard data:', err);
-        setStats({
-          totalRevenue: 17213,
-          totalOrders: 5,
-          activeProducts: 65,
-          secondaryMetric: 5,
-        });
-        setRecentOrders(DEMO_RECENT_ORDERS);
-        setTopVendors(DEFAULT_VENDORS);
+        console.error("Admin dashboard data load failed:", err);
       } finally {
         setLoading(false);
       }
     };
-    loadDashboardData();
-  }, [user, timeframe]);
-
-  const getUserName = (o: any) => {
-    if (o.guestInfo?.name) return o.guestInfo.name;
-    if (!o.user) return 'Guest Customer';
-    return typeof o.user === 'string' ? o.user : (o.user.name || 'Customer');
-  };
-
-  const isVendor = user?.role === 'vendor';
-
-  const ORDER_STATUS_COLORS: Record<string, string> = {
-    delivered: '#22c55e',
-    shipped: '#3b82f6',
-    processing: '#a855f7',
-    placed: '#f59e0b',
-    cancelled: '#ef4444',
-  };
-
-  const ORDER_STATUS_LABELS: Record<string, string> = {
-    delivered: 'Delivered',
-    shipped: 'Shipped',
-    processing: 'Processing',
-    placed: 'Placed',
-    cancelled: 'Cancelled',
-  };
-
-  const totalDistributionSum = statusDistribution.reduce((acc, curr) => acc + curr.value, 0);
-  
-  const statusChartData = statusDistribution.length > 0 
-    ? statusDistribution.map((item) => {
-        const percentage = totalDistributionSum > 0 ? Math.round((item.value / totalDistributionSum) * 100) : 0;
-        return {
-          name: ORDER_STATUS_LABELS[item.name] || item.name.charAt(0).toUpperCase() + item.name.slice(1),
-          value: percentage || item.value,
-          color: ORDER_STATUS_COLORS[item.name] || '#9ca3af',
-        };
-      })
-    : [
-        { name: 'Delivered', value: 20, color: '#22c55e' },
-        { name: 'Shipped', value: 20, color: '#3b82f6' },
-        { name: 'Processing', value: 20, color: '#a855f7' },
-        { name: 'Placed', value: 20, color: '#f59e0b' },
-        { name: 'Cancelled', value: 20, color: '#ef4444' },
-      ];
+    loadAdminData();
+  }, [timeframe]);
 
   if (loading) {
     return (
@@ -353,336 +607,137 @@ const DashboardPage: React.FC = () => {
     );
   }
 
+  const commRate = typeof window !== 'undefined' ? Number(localStorage.getItem('stylehub_platform_commission') || 12) : 12;
+  const commissionEarned = Math.round(stats.totalRevenue * (commRate / 100));
+
   return (
     <div className="space-y-6">
+      {/* Enterprise Platform Executive Header */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 shadow-xl border border-indigo-900/30">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold uppercase tracking-wider border border-indigo-500/30">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              Platform Command Center
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold font-serif">
+              Enterprise Overview 👋
+            </h1>
+            <p className="text-slate-300 text-sm">
+              Real-time platform sales, vendor payouts, customer growth, and marketplace health metrics.
+            </p>
+          </div>
 
-      {/* ── Page header ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold font-display">
-            Good evening, {user?.name?.split(' ')[0] || 'Admin'} 👋
-          </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            {isVendor ? "Here's what's happening with your store today." : "Here's what's happening with StyleHub today."}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {isVendor ? (
-            <Button size="sm" onClick={() => navigate('/vendor/products/new')}>+ Add Product</Button>
-          ) : (
-            <>
-              <Button variant="outline" size="sm" onClick={() => navigate('/analytics')}>Analytics Report</Button>
-              <Button size="sm" onClick={() => navigate('/products')}>Manage Products</Button>
-            </>
-          )}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              onClick={() => navigate('/discounts')}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-md transition whitespace-nowrap"
+            >
+              <Tag className="w-4 h-4" /> Discounts & Sales
+            </button>
+            <button
+              onClick={() => navigate('/cms')}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700/80 shadow-md transition whitespace-nowrap"
+            >
+              CMS Editor
+            </button>
+            <button
+              onClick={() => navigate('/analytics')}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700/80 shadow-md transition whitespace-nowrap"
+            >
+              Platform Analytics
+            </button>
+          </div>
+
         </div>
       </div>
 
-      {/* ── Stat cards ──────────────────────────────────────────────────────── */}
+      {/* Admin Executive Stat Cards */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          title={isVendor ? "Store Revenue" : "Total Revenue"}
+          title="Platform Gross GMV"
           value={`₹${stats.totalRevenue.toLocaleString('en-IN')}`}
-          change={12.5}
           icon={IndianRupee}
           gradient="gradient-violet"
-          subtitle={isVendor ? "Your store sales" : "Jul 2026"}
+          subtitle="Gross merchandise volume"
         />
         <StatCard
-          title={isVendor ? "Store Orders" : "Total Orders"}
-          value={stats.totalOrders.toLocaleString('en-IN')}
-          change={8.2}
-          icon={ShoppingCart}
+          title={`Platform Commission (${commRate}%)`}
+          value={`₹${commissionEarned.toLocaleString('en-IN')}`}
+          icon={DollarSign}
           gradient="gradient-blue"
-          subtitle="Matching orders page"
+          subtitle="Net platform revenue"
         />
+
         <StatCard
-          title="Active Products"
-          value={stats.activeProducts.toLocaleString('en-IN')}
-          change={-2.4}
-          icon={Package}
+          title="Active Marketplace Vendors"
+          value={stats.activeVendors.toLocaleString('en-IN')}
+          icon={Building2}
           gradient="gradient-green"
-          subtitle={isVendor ? "In your shop catalog" : "Across all vendors"}
+          subtitle="Approved boutique stores"
         />
         <StatCard
-          title={isVendor ? "Pending Shipments" : "Active Vendors"}
-          value={stats.secondaryMetric.toLocaleString('en-IN')}
-          change={4.1}
-          icon={isVendor ? Truck : Store}
+          title="Total Marketplace Orders"
+          value={stats.totalOrders.toLocaleString('en-IN')}
+          icon={ShoppingCart}
           gradient="gradient-amber"
-          subtitle={isVendor ? "Orders to pack & ship" : "Active marketplace sellers"}
+          subtitle="Platform-wide orders"
         />
       </div>
 
-      {/* ── Charts row ──────────────────────────────────────────────────────── */}
+
+      {/* Analytics & Distribution Grid */}
       <div className="grid gap-4 lg:grid-cols-3">
-
-        {/* Revenue area chart */}
         <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div>
-                <CardTitle>Revenue Overview</CardTitle>
-                <CardDescription>Monthly revenue & orders for 2026</CardDescription>
-              </div>
-
-              {/* Timeframe Selector Pills */}
-              <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
-                {(['7d', '30d', '90d', '1y'] as const).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setTimeframe(t)}
-                    className={cn(
-                      'px-2.5 py-1 text-xs font-semibold rounded-md transition-all',
-                      timeframe === t
-                        ? 'bg-white dark:bg-slate-800 text-primary shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    )}
-                  >
-                    {t.toUpperCase()}
-                  </button>
-                ))}
-              </div>
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>GMV Revenue & Sales Performance</CardTitle>
+              <CardDescription>Platform gross sales trends</CardDescription>
             </div>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={240}>
               <AreaChart data={monthlyRevenue} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="hsl(262 83% 58%)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(262 83% 58%)" stopOpacity={0} />
+                  <linearGradient id="gradAdminRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `₹${v.toLocaleString('en-IN')}`}
-                />
-                <Tooltip
-                  content={({ active, payload, label }) => {
-                    if (!active || !payload || !payload.length) return null;
-                    const rev = payload[0]?.value as number;
-                    const ord = payload[0]?.payload?.orders || 1;
-                    const aov = ord > 0 ? Math.round(rev / ord) : rev;
-                    return (
-                      <div className="bg-popover border text-popover-foreground shadow-lg rounded-xl p-3 text-xs space-y-1">
-                        <p className="font-bold border-b pb-1 mb-1">{label}</p>
-                        <p className="text-primary font-semibold">Revenue: ₹{rev.toLocaleString('en-IN')}</p>
-                        <p className="text-blue-500 font-medium">Orders: {ord}</p>
-                        <p className="text-emerald-600 font-medium">Avg Order Value: ₹{aov.toLocaleString('en-IN')}</p>
-                      </div>
-                    );
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="hsl(262 83% 58%)"
-                  strokeWidth={2.5}
-                  fill="url(#gradRevenue)"
-                />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `₹${v}`} />
+                <Tooltip />
+                <Area type="monotone" dataKey="revenue" stroke="#8b5cf6" strokeWidth={2.5} fill="url(#gradAdminRevenue)" />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Order status donut */}
+        {/* Top Vendors Leaderboard */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Order Status</CardTitle>
-            <CardDescription>Distribution across orders</CardDescription>
+          <CardHeader className="pb-3">
+            <CardTitle>Top Vendor Leaderboard</CardTitle>
+            <CardDescription>Ranked by revenue generation</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-center">
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie
-                  data={statusChartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={80}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {statusChartData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} strokeWidth={0} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                  }}
-                  formatter={(v: number) => [`${v}%`]}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-
-            <div className="w-full space-y-2 mt-2">
-              {statusChartData.map((item) => (
-                <div key={item.name} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full shrink-0"
-                      style={{ background: item.color }}
-                    />
-                    <span className="text-muted-foreground">{item.name}</span>
+          <CardContent className="p-0">
+            <div className="divide-y divide-border">
+              {(topVendors.length > 0 ? topVendors : DEFAULT_VENDORS).map((v, i) => (
+                <div key={v.name} className="p-3.5 flex items-center justify-between hover:bg-muted/30 transition">
+                  <div className="flex items-center gap-3">
+                    <span className="font-bold text-xs text-muted-foreground w-4">{i + 1}</span>
+                    <div>
+                      <p className="text-xs font-bold text-foreground">{v.name}</p>
+                      <p className="text-[10px] text-muted-foreground">⭐ {v.rating} · {v.orders} orders</p>
+                    </div>
                   </div>
-                  <span className="font-semibold">{item.value}%</span>
+                  <span className="text-xs font-bold text-violet-600">₹{v.revenue.toLocaleString('en-IN')}</span>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* ── Bottom row ──────────────────────────────────────────────────────── */}
-      <div className={cn("grid gap-4", isVendor ? "grid-cols-1" : "lg:grid-cols-2")}>
-
-        {/* Recent orders */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle>Recent Orders</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-primary gap-1 h-7 px-2"
-                onClick={() => navigate(isVendor ? '/vendor/orders' : '/orders')}
-              >
-                View all <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y divide-border">
-              {recentOrders.length === 0 ? (
-                <div className="py-12 text-center text-sm text-muted-foreground">
-                  No recent orders.
-                </div>
-              ) : (
-                recentOrders.map((order) => {
-                  const cfg = STATUS_CONFIG[order.status] || { label: order.status, variant: 'secondary', icon: ShoppingCart };
-                  const amount = order.total;
-                  return (
-                    <div key={order._id} className="flex items-center gap-3 px-6 py-3 hover:bg-muted/40 transition-colors">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0">
-                        <cfg.icon className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{getUserName(order)}</p>
-                        <p className="text-xs text-muted-foreground">{order.orderNumber} · {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold">₹{amount.toLocaleString('en-IN')}</p>
-                        <Badge variant={cfg.variant} className="mt-0.5 text-[10px] px-1.5 py-0">
-                          {cfg.label}
-                        </Badge>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Top vendors — Admin only */}
-        {!isVendor && (
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle>Top Vendors</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-primary gap-1 h-7 px-2"
-                  onClick={() => navigate('/vendors')}
-                >
-                  View all <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-border">
-                {(topVendors.length > 0 ? topVendors : DEFAULT_VENDORS).map((vendor, i) => (
-                  <div key={vendor.name} className="flex items-center gap-3 px-6 py-3 hover:bg-muted/40 transition-colors">
-                    <span className="text-muted-foreground font-bold text-sm w-5 text-center shrink-0">
-                      {i + 1}
-                    </span>
-                    <div className="h-8 w-8 rounded-lg gradient-violet flex items-center justify-center text-white text-xs font-bold shrink-0">
-                      {vendor.name.charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{vendor.name}</p>
-                      <p className="text-xs text-muted-foreground">{vendor.orders} orders · ⭐ {vendor.rating}</p>
-                    </div>
-                    <p className="text-sm font-semibold text-right shrink-0">
-                      ₹{vendor.revenue.toLocaleString('en-IN')}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {isVendor && (
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle>Top Selling Products</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-primary gap-1 h-7 px-2"
-                  onClick={() => navigate('/vendor/products')}
-                >
-                  View all <ArrowRight className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-border">
-                {(topProducts.length > 0 ? topProducts : [
-                  { name: 'Ivory Floral Anarkali Set', orders: 48, revenue: 167952, rating: 4.8 },
-                  { name: 'Camel Ribbed Co-ord Set', orders: 35, revenue: 97965, rating: 4.7 },
-                  { name: 'Peach Georgette Sharara', orders: 22, revenue: 61578, rating: 4.5 }
-                ]).map((product, i) => (
-                  <div key={product.name} className="flex items-center gap-3 px-6 py-3 hover:bg-muted/40 transition-colors">
-                    <span className="text-muted-foreground font-bold text-sm w-5 text-center shrink-0">
-                      {i + 1}
-                    </span>
-                    <div className="h-8 w-8 rounded-lg gradient-indigo flex items-center justify-center text-white text-xs font-bold shrink-0">
-                      {product.name.charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">{product.orders} units sold · ⭐ {product.rating}</p>
-                    </div>
-                    <p className="text-sm font-semibold text-right shrink-0">
-                      ₹{product.revenue.toLocaleString('en-IN')}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
     </div>
   );
-};
-
-export default DashboardPage;
+}

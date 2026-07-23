@@ -11,13 +11,16 @@ const router = Router();
 // ─── Public catalog ───────────────────────────────────────────────────────────
 router.get('/',         optionalAuth, productController.getProducts);
 router.get('/featured', productController.getFeaturedProducts);
-router.get('/:slug',    optionalAuth, productController.getProductBySlug);
 
 // ─── Vendor dashboard — their own products ────────────────────────────────────
+// IMPORTANT: Must be defined BEFORE /:slug to prevent Express matching "vendor" as a slug
 router.get('/vendor/mine',
   protect, authorize(UserRole.Vendor, UserRole.Admin),
   productController.getVendorProducts,
 );
+
+router.get('/:slug',    optionalAuth, productController.getProductBySlug);
+
 
 // ─── Create product [vendor + admin] ─────────────────────────────────────────
 router.post('/',

@@ -22,6 +22,8 @@ const EnquiriesPage          = lazy(() => import('./pages/enquiries/EnquiriesPag
 const AnalyticsPage          = lazy(() => import('./pages/analytics/AnalyticsPage'));
 const ActivityLogPage        = lazy(() => import('./pages/activity/ActivityLogPage'));
 const CMSPageEditor          = lazy(() => import('./pages/cms/CMSPageEditor'));
+const DiscountsPage          = lazy(() => import('./pages/discounts/DiscountsPage'));
+const VendorPayoutsPage      = lazy(() => import('./pages/vendor/VendorPayoutsPage'));
 
 // Vendor pages
 const StoreProfilePage       = lazy(() => import('./pages/vendor/StoreProfilePage'));
@@ -29,6 +31,7 @@ const VendorProductsPage     = lazy(() => import('./pages/vendor/VendorProductsP
 const ProductFormPage        = lazy(() => import('./pages/vendor/ProductFormPage'));
 const VendorOrdersPage       = lazy(() => import('./pages/vendor/VendorOrdersPage'));
 const VendorEnquiriesPage    = lazy(() => import('./pages/vendor/VendorEnquiriesPage'));
+
 
 
 // ─── Full-page loading fallback ───────────────────────────────────────────────
@@ -116,6 +119,10 @@ function App() {
             path="/activity"
             element={<ProtectedRoute allowedRoles={['admin']}><ActivityLogPage /></ProtectedRoute>}
           />
+          <Route
+            path="/discounts"
+            element={<ProtectedRoute allowedRoles={['admin', 'vendor']}><DiscountsPage /></ProtectedRoute>}
+          />
 
           {/* ── Vendor-only section ───────────────────────────────────────── */}
 
@@ -128,6 +135,15 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/vendor/payouts"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'vendor']}>
+                <VendorPayoutsPage />
+              </ProtectedRoute>
+            }
+          />
+
 
           {/* Product list (vendor sees their own products) */}
           <Route

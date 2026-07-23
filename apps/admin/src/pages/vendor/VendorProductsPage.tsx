@@ -19,18 +19,20 @@ const STATUS_MAP: Record<string, { label: string; variant: 'success' | 'warning'
   archived: { label: 'Archived', variant: 'destructive' },
 };
 
+import BulkProductCsvModal from '../../components/products/BulkProductCsvModal';
+
 const VendorProductsPage: React.FC = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch]  = useState('');
   const [status, setStatus]  = useState('all');
+  const [csvModalOpen, setCsvModalOpen] = useState(false);
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
       const res = await productApi.myProducts({ limit: 100 });
-      // Handle response shape
       const data = res.data?.data || (res as any).data || [];
       setProducts(data);
     } catch (err) {
@@ -59,7 +61,6 @@ const VendorProductsPage: React.FC = () => {
     return typeof p.category === 'string' ? p.category : p.category.name;
   };
 
-  // Filter
   const filtered = products.filter((p) => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.sku.toLowerCase().includes(search.toLowerCase());
@@ -67,7 +68,6 @@ const VendorProductsPage: React.FC = () => {
     return matchSearch && matchStatus;
   });
 
-  // Summary stats
   const stats = {
     total:   products.length,
     active:  products.filter((p) => p.status === 'active').length,
@@ -87,11 +87,21 @@ const VendorProductsPage: React.FC = () => {
           <Button variant="outline" size="icon" onClick={fetchProducts} disabled={loading}>
             <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
           </Button>
+          <Button variant="outline" onClick={() => setCsvModalOpen(true)} className="gap-2">
+            Import CSV
+          </Button>
           <Button onClick={() => navigate('/vendor/products/new')} className="gap-2">
             <Plus className="h-4 w-4" /> Add Product
           </Button>
         </div>
       </div>
+
+      <BulkProductCsvModal
+        isOpen={csvModalOpen}
+        onClose={() => setCsvModalOpen(false)}
+        onSuccess={fetchProducts}
+      />
+
 
       {loading ? (
         <div className="flex justify-center items-center py-20">

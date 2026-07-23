@@ -246,12 +246,14 @@ export default function ProductDetailClient({ product }: Props) {
       return sel === c || c.includes(sel) || sel.includes(c);
     });
   };
-  const effectivePrice = selectedVariant?.price ?? product.basePrice;
-  const inStock = selectedVariant ? selectedVariant.stock > 0 : false;
-  const stockLevel = selectedVariant?.stock ?? 0;
-  const discount = product.compareAtPrice
-    ? Math.round(((product.compareAtPrice - effectivePrice) / product.compareAtPrice) * 100)
+  const effectivePrice = selectedVariant?.price ?? sizesForColor[0]?.price ?? product.basePrice;
+  const comparePrice = product.compareAtPrice || (effectivePrice < product.basePrice ? product.basePrice : null);
+  const inStock = selectedVariant ? selectedVariant.stock > 0 : sizesForColor.some(v => v.stock > 0);
+  const stockLevel = selectedVariant?.stock ?? sizesForColor[0]?.stock ?? 0;
+  const discount = comparePrice
+    ? Math.round(((comparePrice - effectivePrice) / comparePrice) * 100)
     : null;
+
 
   const handleAddToCart = () => {
     if (!selectedSize || !selectedVariant) { alert("Please select a size"); return; }
@@ -420,10 +422,16 @@ export default function ProductDetailClient({ product }: Props) {
             {/* Price */}
             <div className="flex items-baseline gap-3">
               <Price amount={effectivePrice} className="font-display text-4xl font-medium text-[var(--charcoal)]" />
-              {product.compareAtPrice && (
-                <Price amount={product.compareAtPrice} className="text-xl font-body text-[var(--muted)] line-through" />
+              {comparePrice && comparePrice > effectivePrice && (
+                <Price amount={comparePrice} className="text-xl font-body text-[var(--muted)] line-through" />
+              )}
+              {discount && discount > 0 && (
+                <span className="px-2.5 py-1 bg-rose-100 text-rose-700 font-bold text-xs rounded-full uppercase tracking-wider">
+                  {discount}% OFF
+                </span>
               )}
             </div>
+
 
             <div className="h-px bg-[var(--border)]" />
 

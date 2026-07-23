@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { fetchCmsPage, getActiveBlocks } from "@/lib/cms-data";
 import CMSRenderer from "@/components/cms/CMSRenderer";
 import BrandMarquee from "@/components/home/BrandMarquee";
+import FlashSaleBanner from "@/components/home/FlashSaleBanner";
 import HomeLoading from "./loading";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api';
@@ -45,17 +46,21 @@ export default async function HomePage() {
 
   return (
     <Suspense fallback={<HomeLoading />}>
-      {activeBlocks.length > 0 ? (
-        <div className="flex flex-col w-full">
-          <CMSRenderer blocks={activeBlocks} />
-          {vendors.length > 0 && <BrandMarquee vendors={vendors} />}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 bg-[var(--cream)]">
-          <h2 className="font-display text-2xl font-semibold mb-2">Welcome to StyleHub</h2>
-          <p className="text-sm font-body text-[var(--muted)]">Homepage is currently under configuration.</p>
-        </div>
-      )}
+      <div className="flex flex-col w-full max-w-7xl mx-auto px-4">
+        <FlashSaleBanner />
+        {activeBlocks.length > 0 ? (
+          <div className="flex flex-col w-full">
+            <CMSRenderer blocks={activeBlocks} />
+            {vendors.length > 0 && <BrandMarquee vendors={vendors} />}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center min-h-[30vh] text-center p-8 bg-[var(--cream)] rounded-2xl">
+            <h2 className="font-display text-2xl font-semibold mb-2">Welcome to StyleHub</h2>
+            <p className="text-sm font-body text-[var(--muted)]">Discover top multi-vendor fashion collections.</p>
+          </div>
+        )}
+      </div>
     </Suspense>
   );
 }
+

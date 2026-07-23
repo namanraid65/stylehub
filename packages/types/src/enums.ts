@@ -11,12 +11,14 @@ export enum UserRole {
 export enum VendorStatus {
   Pending = 'pending',
   Approved = 'approved',
+  Rejected = 'rejected',
   Suspended = 'suspended',
 }
 
 export enum ProductStatus {
   Draft = 'draft',
   Active = 'active',
+  Inactive = 'inactive',
   Archived = 'archived',
 }
 
