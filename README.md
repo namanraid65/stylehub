@@ -4,8 +4,6 @@
 ![Stack](https://img.shields.io/badge/Stack-MERN%20Monorepo%20(Next.js%2015%20%7C%20Vite%20%7C%20Express%20%7C%20MongoDB)-111111?style=for-the-badge)
 ![Storefront](https://img.shields.io/badge/Live%20Storefront-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 ![Admin Panel](https://img.shields.io/badge/Live%20Admin-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
-![Security Audit](https://img.shields.io/badge/Audit-100%25%20Hardened-brightgreen?style=for-the-badge&logo=shieldsdotio)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 **StyleHub** is a premium, high-performance multi-vendor e-commerce platform built on a modern **MERN (MongoDB, Express, Next.js 15, Node.js)** monorepo architecture. Designed specifically for fashion, apparel, and boutique marketplace operations, StyleHub features real-time cloud synchronization, interactive garment zoom lenses, instant email billing, dynamic low-stock scarcity badges, Amazon/Myntra style sale campaign management, digital wallet rewards, scan & pay UPI simulation, and AI-powered boutique vendor tools.
 
@@ -15,17 +13,6 @@
 
 - 🛍️ **Customer Storefront:** [https://stylehub-web.vercel.app/](https://stylehub-web.vercel.app/)
 - 💼 **Admin & Vendor Panel:** [https://stylehub-admin-nine.vercel.app/login](https://stylehub-admin-nine.vercel.app/login)
-
----
-
-## 🔒 100% Audit & Synchronization Certified
-
-The entire codebase across API, Web, Admin, and Shared Packages has undergone a comprehensive **23-Point System & Security Audit**:
-- **🛡️ Locked Authentication & Authorization:** All sensitive endpoints (`/api/wallet`, `/api/discounts`, `/api/reviews/admin`, `/api/enquiries`, `/api/analytics`) are strictly protected with JWT middleware (`protect`) and role verification (`authorize`).
-- **📦 Clean DB-Driven Dashboards:** Admin & Vendor dashboards prioritize real MongoDB aggregations over static mocks, providing true revenue metrics, status distribution, and sales leaderboards.
-- **🔄 Universal Type Sync:** Shared `packages/types` and `packages/validators` enforce strict contracts for orders, vendor statuses (`pending`, `approved`, `rejected`, `suspended`), product statuses (`draft`, `active`, `inactive`, `archived`), and fulfillment splits.
-- **🖼️ Image Upload Engine:** Native `POST /api/upload/image` API supporting Cloudinary cloud storage with automatic local filesystem fallback for development.
-- **⚡ Fixed Route Prioritisation:** Resolved Express route shadowing bug (`/vendor/mine` over `/:slug`) ensuring 100% uptime for vendor product management.
 
 ---
 
@@ -43,9 +30,8 @@ The entire codebase across API, Web, Admin, and Shared Packages has undergone a 
 * **Flash Deal Countdown Banner (`FlashSaleBanner.tsx`):** Animated live countdown timer with stock scarcity progress bars (*"⚡ Only 16 items left in stock!"*).
 * **Live Package Order Tracker (`OrderTrackerStepper.tsx`):** Interactive shipment progress timeline (*Placed ➔ Packing ➔ Shipped ➔ Delivery*) with Awb tracking IDs in the customer account dashboard (`/account`).
 
-### 💳 3. StyleCoins Digital Wallet & Scan & Pay UPI
-* **StyleCoins Loyalty Wallet (`wallet.store.ts`):** Earn cashback on purchases, view wallet balance in the header, and redeem balance at checkout for instant discounts.
-* **Scan & Pay UPI QR Gateway (`UpiQrModal.tsx`):** Dynamic UPI QR code modal (GPay, PhonePe, Paytm, BHIM) with a payment verification timer.
+### 📧 3. Gmail & SMTP Email Invoicing ("Bill on Gmail")
+* **Automated Order Receipts:** Dispatches HTML order invoices directly to the customer's email address (*Gmail SMTP / Resend API*) upon checkout completion, complete with GST breakdown and downloadable PDF invoices.
 
 ### 🏪 4. AI Fashion Writer & Vendor Enterprise Tools
 * **AI Fashion Description Generator (`AiDescriptionGeneratorModal.tsx`):** One-click **"Auto-Generate with AI"** magic button in the Vendor Product form to write catchy, high-converting product descriptions and highlights.
@@ -60,9 +46,6 @@ The entire codebase across API, Web, Admin, and Shared Packages has undergone a 
 
 ### ⚠️ 7. Low Stock & Scarcity Urgency Badges
 * **Dynamic Indicators:** Real-time stock alerts (*e.g., "⚡ Only 2 left in stock!"*) on product pages and variant selectors to prevent overselling.
-
-### 📧 8. Gmail & SMTP Email Invoicing ("Bill on Gmail")
-* **Automated Order Receipts:** Dispatches HTML order invoices directly to the customer's email address (*Gmail SMTP / Resend API*) upon checkout completion, complete with GST breakdown and downloadable PDF invoices.
 
 ---
 
@@ -137,7 +120,3 @@ pnpm dev
 | **Customer Accounts** | `aarav@gmail.com`<br>`priya@gmail.com` | `password123` | Test flash sales, StyleCoins wallet, UPI QR code payment, order tracking, and image zoom lens. |
 
 ---
-
-## 📄 License
-
-This project is open-source and available under the [MIT License](LICENSE).
