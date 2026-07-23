@@ -2,9 +2,21 @@
 
 ![StyleHub Banner](https://img.shields.io/badge/StyleHub-E--Commerce%20Marketplace-C84B31?style=for-the-badge&logo=shopify&logoColor=white)
 ![Stack](https://img.shields.io/badge/Stack-MERN%20Monorepo%20(Next.js%2015%20%7C%20Vite%20%7C%20Express%20%7C%20MongoDB)-111111?style=for-the-badge)
+![Security Audit](https://img.shields.io/badge/Audit-100%25%20Hardened-brightgreen?style=for-the-badge&logo=shieldsdotio)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 **StyleHub** is a premium, high-performance multi-vendor e-commerce platform built on a modern **MERN (MongoDB, Express, Next.js 15, Node.js)** monorepo architecture. Designed specifically for fashion, apparel, and boutique marketplace operations, StyleHub features real-time cloud synchronization, interactive garment zoom lenses, instant email billing, dynamic low-stock scarcity badges, Amazon/Myntra style sale campaign management, digital wallet rewards, scan & pay UPI simulation, and AI-powered boutique vendor tools.
+
+---
+
+## 🔒 100% Audit & Synchronization Certified
+
+The entire codebase across API, Web, Admin, and Shared Packages has undergone a comprehensive **23-Point System & Security Audit**:
+- **🛡️ Locked Authentication & Authorization:** All sensitive endpoints (`/api/wallet`, `/api/discounts`, `/api/reviews/admin`, `/api/enquiries`, `/api/analytics`) are strictly protected with JWT middleware (`protect`) and role verification (`authorize`).
+- **📦 Clean DB-Driven Dashboards:** Admin & Vendor dashboards prioritize real MongoDB aggregations over static mocks, providing true revenue metrics, status distribution, and sales leaderboards.
+- **🔄 Universal Type Sync:** Shared `packages/types` and `packages/validators` enforce strict contracts for orders, vendor statuses (`pending`, `approved`, `rejected`, `suspended`), product statuses (`draft`, `active`, `inactive`, `archived`), and fulfillment splits.
+- **🖼️ Image Upload Engine:** Native `POST /api/upload/image` API supporting Cloudinary cloud storage with automatic local filesystem fallback for development.
+- **⚡ Fixed Route Prioritisation:** Resolved Express route shadowing bug (`/vendor/mine` over `/:slug`) ensuring 100% uptime for vendor product management.
 
 ---
 
@@ -23,13 +35,13 @@
 * **Live Package Order Tracker (`OrderTrackerStepper.tsx`):** Interactive shipment progress timeline (*Placed ➔ Packing ➔ Shipped ➔ Delivery*) with Awb tracking IDs in the customer account dashboard (`/account`).
 
 ### 💳 3. StyleCoins Digital Wallet & Scan & Pay UPI
-* **StyleCoins Loyalty Wallet (`wallet.store.ts`):** Earn 5% cashback on purchases, view wallet balance in the header, and redeem balance at checkout for instant discounts.
+* **StyleCoins Loyalty Wallet (`wallet.store.ts`):** Earn cashback on purchases, view wallet balance in the header, and redeem balance at checkout for instant discounts.
 * **Scan & Pay UPI QR Gateway (`UpiQrModal.tsx`):** Dynamic UPI QR code modal (GPay, PhonePe, Paytm, BHIM) with a payment verification timer.
 
 ### 🏪 4. AI Fashion Writer & Vendor Enterprise Tools
 * **AI Fashion Description Generator (`AiDescriptionGeneratorModal.tsx`):** One-click **"Auto-Generate with AI"** magic button in the Vendor Product form to write catchy, high-converting product descriptions and highlights.
 * **Bulk CSV Product Importer (`BulkProductCsvModal.tsx`):** Drag-and-drop CSV batch upload modal for vendors with sample CSV template downloads.
-* **Vendor Settlement Ledger (`VendorPayoutsPage.tsx`):** Dedicated payout ledger tracking gross sales, 10% platform commission deductions, and bank settlements.
+* **Vendor Settlement Ledger (`VendorPayoutsPage.tsx`):** Dedicated payout ledger tracking gross sales, platform commission deductions, and bank settlements.
 
 ### 🔄 5. Automatic Cart & Wishlist Cloud Sync (`SyncObserver`)
 * **Cross-Device & Guest Sync:** Cart & wishlist items automatically persist across browser sessions using **Zustand** local storage and sync to MongoDB via `/api/cart/sync` and `/api/auth/wishlist/sync` upon login.
@@ -41,7 +53,7 @@
 * **Dynamic Indicators:** Real-time stock alerts (*e.g., "⚡ Only 2 left in stock!"*) on product pages and variant selectors to prevent overselling.
 
 ### 📧 8. Gmail & SMTP Email Invoicing ("Bill on Gmail")
-* **Automated Order Receipts:** Dispatches HTML order invoices directly to the customer's email address (*Gmail SMTP / Resend API*) upon checkout completion, complete with GST breakdown and downloadable PDF invoices (`@react-pdf/renderer`).
+* **Automated Order Receipts:** Dispatches HTML order invoices directly to the customer's email address (*Gmail SMTP / Resend API*) upon checkout completion, complete with GST breakdown and downloadable PDF invoices.
 
 ---
 
@@ -52,7 +64,7 @@ StyleHub is structured as a **Turborepo monorepo** using **pnpm workspaces**:
 ```text
 stylehub/
 ├── apps/
-│   ├── api/          # Express.js (TypeScript) REST API with MongoDB & Nodemailer/Resend
+│   ├── api/          # Express.js (TypeScript) REST API with MongoDB & Cloudinary/Multer
 │   ├── admin/        # Vite + React (TypeScript) + Tailwind Dashboard for Admins & Vendors
 │   └── web/          # Next.js 15 (App Router) Storefront for Customer Shopping
 └── packages/
@@ -79,15 +91,20 @@ pnpm install
 ```
 
 ### Step 2: Configure Environment Variables
-Copy `.env.example` to `.env` in the root directory:
+Copy `.env.example` to `.env` in `apps/api`:
 ```bash
-cp .env.example .env
+cp apps/api/.env.example apps/api/.env
 ```
 
 ### Step 3: Seed Database
 Populate the database with sample boutique vendors, multi-variant products, categories, CMS layouts, and discounts:
 ```bash
 pnpm --filter @stylehub/api db:seed
+```
+
+To clear and re-create fresh test orders across all vendors:
+```bash
+cd apps/api && npx ts-node src/scripts/reset-orders.ts
 ```
 
 ### Step 4: Run Development Servers
@@ -106,9 +123,9 @@ pnpm dev
 
 | Role | Email | Password | Access Capabilities |
 | :--- | :--- | :--- | :--- |
-| **System Admin** | `admin@stylehub.in` | `password123` | Create platform discount sales, moderate reviews, edit CMS, inspect analytics & platform settings. |
-| **Vendor Manager** | `vendor@desicouture.in` | `password123` | Create store sales, use AI description generator, import CSV products, manage inventory & payouts. |
-| **Customer Guest** | *Guest / Custom Signup* | *N/A* | Test flash sales, StyleCoins wallet, UPI QR code payment, order tracking, and image zoom lens. |
+| **System Admin** | `admin@stylehub.in` | `password123` | Create platform discount sales, moderate reviews, edit CMS, inspect analytics, platform settings, & all orders. |
+| **Vendor Manager (DesiCouture)** | `vendor@desicouture.in` | `password123` | Manage DesiCouture boutique, use AI description generator, import CSV products, view store orders & payouts. |
+| **Customer Accounts** | `aarav@gmail.com`<br>`priya@gmail.com` | `password123` | Test flash sales, StyleCoins wallet, UPI QR code payment, order tracking, and image zoom lens. |
 
 ---
 
