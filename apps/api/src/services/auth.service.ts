@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import User, { IUserDoc } from '../models/User';
 import Vendor from '../models/Vendor';
+import ActivityLog from '../models/ActivityLog';
 import { ApiError } from '../utils/ApiError';
 import {
   generateAccessToken,
@@ -52,6 +53,17 @@ export const registerCustomer = async (input: RegisterInput) => {
 
   await user.save();
   logger.info(`New customer registered: ${user.email}`);
+
+  ActivityLog.create({
+    actor: user._id,
+    actorRole: 'customer',
+    actorName: user.name,
+    action: 'auth.register',
+    entity: 'User',
+    entityId: user._id.toString(),
+    summary: `${user.name} registered a new customer account`,
+  }).catch((err) => logger.error('Failed to log customer registration:', err));
+
   return issueTokens(user);
 };
 
@@ -76,16 +88,29 @@ export const registerVendor = async (input: VendorRegisterInput) => {
   });
   await user.save();
 
-  // Create Vendor profile (pending approval)
+  // Create Vendor profile (approved if created by admin)
+  const isAutoApprove = Boolean((input as any).autoApprove);
   await Vendor.create({
     user:             user._id,
     storeName:        input.storeName,
     storeSlug,
     storeDescription: input.storeDescription,
-    status:           'pending',
+    status:           isAutoApprove ? 'approved' : 'pending',
+    approvedAt:       isAutoApprove ? new Date() : undefined,
   });
 
-  logger.info(`New vendor registered: ${user.email} → store: ${storeSlug} (pending approval)`);
+  logger.info(`New vendor registered: ${user.email} → store: ${storeSlug} (${isAutoApprove ? 'approved' : 'pending approval'})`);
+
+  ActivityLog.create({
+    actor: user._id,
+    actorRole: 'vendor',
+    actorName: user.name,
+    action: 'auth.register',
+    entity: 'Vendor',
+    entityId: user._id.toString(),
+    summary: `${user.name} registered a new vendor store (${input.storeName})`,
+  }).catch((err) => logger.error('Failed to log vendor registration:', err));
+
   return issueTokens(user);
 };
 
@@ -101,6 +126,17 @@ export const login = async (input: LoginInput) => {
   if (!isMatch) throw ApiError.unauthorized('Invalid email or password.');
 
   logger.info(`User logged in: ${user.email} [${user.role}]`);
+
+  ActivityLog.create({
+    actor: user._id,
+    actorRole: (user.role as any) || 'customer',
+    actorName: user.name || user.email,
+    action: 'auth.login',
+    entity: 'User',
+    entityId: user._id.toString(),
+    summary: `${user.name || user.email} (${user.role}) logged in successfully`,
+  }).catch((err) => logger.error('Failed to log login activity:', err));
+
   return issueTokens(user);
 };
 

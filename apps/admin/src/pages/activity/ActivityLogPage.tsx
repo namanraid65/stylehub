@@ -121,7 +121,7 @@ export default function ActivityLogPage() {
       setLogs(listRes.data?.logs || []);
       setTotal(listRes.data?.total || 0);
       
-      const summaryData = summaryRes.data?.data || [];
+      const summaryData = summaryRes.data?.summary || (summaryRes.data as any)?.data || [];
       setSummary(summaryData);
     } catch (err) {
       console.error('Failed to fetch activity logs:', err);

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getProductBySlug, getRelatedProducts } from "@/lib/mock-data";
+import { getProductBySlug, getRelatedProducts, type Product } from "@/lib/mock-data";
 import ProductDetailClient from "@/components/product/ProductDetailClient";
 import RelatedProducts from "@/components/product/RelatedProducts";
 import type { Metadata } from "next";
@@ -10,11 +10,13 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-const mapLiveProduct = (p: any) => {
-  const vName = typeof p.vendor === 'object' ? (p.vendor?.storeName || "DesiCouture") : "DesiCouture";
-  const vSlug = typeof p.vendor === 'object' ? (p.vendor?.storeSlug || "desi-couture") : "desi-couture";
+const mapLiveProduct = (p: Record<string, unknown>): Product => {
+  const vendorObj = typeof p.vendor === 'object' && p.vendor !== null ? (p.vendor as Record<string, unknown>) : {};
+  const categoryObj = typeof p.category === 'object' && p.category !== null ? (p.category as Record<string, unknown>) : {};
+  const vName = String(vendorObj.storeName || "DesiCouture");
+  const vSlug = String(vendorObj.storeSlug || "desi-couture");
   const mappedVendor = {
-    id: typeof p.vendor === 'object' ? p.vendor?._id : (p.vendor || ""),
+    id: String(vendorObj._id || p.vendor || ""),
     name: vName,
     slug: vSlug,
     logo: "https://images.unsplash.com/photo-1610473228636-7a2e4bf0c37a?w=80&h=80&fit=crop",
@@ -29,38 +31,40 @@ const mapLiveProduct = (p: any) => {
   };
 
   return {
-    id: p._id,
-    name: p.name,
-    slug: p.slug,
-    brand: p.brand || vName,
-    category: typeof p.category === 'object' ? (p.category?.name || "Fashion") : "Fashion",
-    categorySlug: typeof p.category === 'object' ? (p.category?.slug || "fashion") : "fashion",
+    id: String(p._id),
+    name: String(p.name),
+    slug: String(p.slug),
+    brand: String(p.brand || vName),
+    category: String(categoryObj.name || "Fashion"),
+    categorySlug: String(categoryObj.slug || "fashion"),
     vendor: mappedVendor,
     vendorId: mappedVendor.id,
     vendorName: mappedVendor.name,
     vendorSlug: mappedVendor.slug,
-    description: p.description || "",
-    longDescription: p.description || "",
-    images: p.images || [],
-    basePrice: p.basePrice || 0,
-    compareAtPrice: p.compareAtPrice,
-    rating: p.avgRating ?? 0,
-    reviewCount: p.reviewCount || 0,
+    description: String(p.description || ""),
+    longDescription: String(p.description || ""),
+    images: Array.isArray(p.images) ? (p.images as string[]) : [],
+    basePrice: Number(p.basePrice || 0),
+    compareAtPrice: p.compareAtPrice ? Number(p.compareAtPrice) : undefined,
+    rating: Number(p.avgRating ?? 0),
+    reviewCount: Number(p.reviewCount || 0),
     soldCount: 0,
-    gender: p.gender || "unisex",
-    tags: p.tags || [],
-    material: p.material || "",
-    careInstructions: p.careInstructions || "",
-    variants: (p.variants || []).map((v: any) => ({
-      size: v.size,
-      color: v.color,
-      colorHex: v.colorHex || "#9ca3af",
-      stock: v.stock || 0,
-      price: v.price || p.basePrice,
-      sku: v.sku || "",
-    })),
+    gender: (p.gender as Product['gender']) || "unisex",
+    tags: Array.isArray(p.tags) ? (p.tags as string[]) : [],
+    material: String(p.material || ""),
+    careInstructions: String(p.careInstructions || ""),
+    variants: Array.isArray(p.variants)
+      ? (p.variants as Record<string, unknown>[]).map((v) => ({
+          size: String(v.size),
+          color: String(v.color),
+          colorHex: String(v.colorHex || "#9ca3af"),
+          stock: Number(v.stock || 0),
+          price: Number(v.price || p.basePrice),
+          sku: String(v.sku || ""),
+        }))
+      : [],
     reviews: [],
-    isFeatured: p.isFeatured || false,
+    isFeatured: Boolean(p.isFeatured),
     isNew: true,
     isBestSeller: false,
   };
@@ -73,16 +77,16 @@ async function getLiveProduct(slug: string) {
     const json = await res.json();
     if (!json.success || !json.data) return null;
     
-    const product = mapLiveProduct(json.data);
+    const product = mapLiveProduct(json.data as Record<string, unknown>);
     
-    // Fetch related products
-    const relRes = await fetch(`${API}/products?category=${json.data.category?._id || json.data.category}&limit=5`, { cache: 'no-store' });
-    let related: any[] = [];
+    const categoryId = typeof json.data.category === 'object' && json.data.category !== null ? json.data.category._id : json.data.category;
+    const relRes = await fetch(`${API}/products?category=${categoryId}&limit=5`, { cache: 'no-store' });
+    let related: Product[] = [];
     if (relRes.ok) {
       const relJson = await relRes.json();
-      const raw = relJson.data?.products || relJson.data || [];
+      const raw = (relJson.data?.products || relJson.data || []) as Record<string, unknown>[];
       related = raw
-        .filter((item: any) => item._id !== product.id)
+        .filter((item) => String(item._id) !== product.id)
         .slice(0, 4)
         .map(mapLiveProduct);
     }

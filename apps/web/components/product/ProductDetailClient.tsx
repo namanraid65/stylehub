@@ -13,7 +13,7 @@ import { useWishlistStore } from "@/lib/stores/wishlist.store";
 import EnquiryModal from "@/components/enquiry/EnquiryModal";
 import ReviewsSection from "@/components/reviews/ReviewsSection";
 import QASection from "@/components/reviews/QASection";
-
+import { Price } from "@/components/ui/Price";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -76,11 +76,19 @@ export default function ProductDetailClient({ product }: Props) {
   // Sizes for selected colour
   const sizesForColor = product.variants.filter((v) => v.color === selectedColor);
   const selectedVariant = sizesForColor.find((v) => v.size === selectedSize);
-  const needsSizeGuide = sizesForColor.length > 1 && !sizesForColor.some(v => {
+  const categoryLower = product.category.toLowerCase();
+
+  const isAccessory = categoryLower.includes("accessories") || 
+                      categoryLower.includes("bag") || 
+                      categoryLower.includes("jewel") || 
+                      categoryLower.includes("belt") ||
+                      categoryLower.includes("watch") ||
+                      categoryLower.includes("sunglass");
+
+  const needsSizeGuide = !isAccessory && sizesForColor.length > 1 && !sizesForColor.some(v => {
     const s = v.size.toLowerCase();
     return s === "free size" || s === "onesize" || s === "fs" || s === "one size" || s === "o/s";
   });
-  const categoryLower = product.category.toLowerCase();
   
   const isFootwear = categoryLower.includes("footwear") || 
                      categoryLower.includes("shoe");
@@ -100,11 +108,22 @@ export default function ProductDetailClient({ product }: Props) {
     })
   );
 
-  const isBottomwear = (categoryLower.includes("denim") || 
-                        categoryLower.includes("pants") || 
-                        categoryLower.includes("jeans") ||
-                        categoryLower.includes("bottom")) &&
-                       sizesForColor.some(v => !isNaN(Number(v.size)));
+  const isBottomwear = !isFootwear && !isKidsApparel && (
+    categoryLower.includes("bottom") ||
+    categoryLower.includes("pants") ||
+    categoryLower.includes("jeans") ||
+    product.name.toLowerCase().includes("pants") ||
+    product.name.toLowerCase().includes("jeans") ||
+    product.name.toLowerCase().includes("jogger") ||
+    product.name.toLowerCase().includes("shorts") ||
+    (categoryLower.includes("denim") && (
+      product.name.toLowerCase().includes("jeans") ||
+      product.name.toLowerCase().includes("pants") ||
+      product.name.toLowerCase().includes("shorts") ||
+      product.name.toLowerCase().includes("jogger") ||
+      (!product.name.toLowerCase().includes("jacket") && !product.name.toLowerCase().includes("shirt"))
+    ))
+  );
 
   const isTopsOrShirts = !isFootwear && !isKidsApparel && !isBottomwear && (
     categoryLower.includes("tops") || 
@@ -124,6 +143,12 @@ export default function ProductDetailClient({ product }: Props) {
   let sizeChartHeaders: string[] = [];
   let sizeChartRows: string[][] = [];
   let sizeChartNote: string = "";
+
+  const chestOrBustHeader = (product.gender === "men" || product.gender === "boys")
+    ? "Chest (in)"
+    : product.gender === "unisex"
+    ? "Chest/Bust (in)"
+    : "Bust (in)";
 
   if (isKidsFootwear) {
     sizeChartHeaders = ["EU Size", "UK Size", "US Size", "Foot Length (cm)"];
@@ -166,16 +191,32 @@ export default function ProductDetailClient({ product }: Props) {
     sizeChartNote = "Kids' apparel sizes correspond to standard children's growth and height ranges.";
   } else if (isBottomwear) {
     sizeChartHeaders = ["Size", "Waist (in)", "Hip (in)", "Inseam (in)", "Rise (in)"];
-    sizeChartRows = [
-      ["28", "28", "36", "30", "9.5"],
-      ["30", "30", "38", "30", "10.0"],
-      ["32", "32", "40", "32", "10.5"],
-      ["34", "34", "42", "32", "11.0"],
-      ["36", "36", "44", "32", "11.5"],
-    ];
+    
+    const hasLetterSizes = sizesForColor.some(v => {
+      const s = v.size.toUpperCase();
+      return s === "S" || s === "M" || s === "L" || s === "XL" || s === "XS" || s === "XXL";
+    });
+
+    if (hasLetterSizes) {
+      sizeChartRows = [
+        ["XS", "26-27", "34-35", "30", "9.0"],
+        ["S", "28-29", "36-37", "30", "9.5"],
+        ["M", "30-32", "38-40", "32", "10.0"],
+        ["L", "33-35", "41-43", "32", "10.5"],
+        ["XL", "36-38", "44-46", "32", "11.0"],
+      ];
+    } else {
+      sizeChartRows = [
+        ["28", "28", "36", "30", "9.5"],
+        ["30", "30", "38", "30", "10.0"],
+        ["32", "32", "40", "32", "10.5"],
+        ["34", "34", "42", "32", "11.0"],
+        ["36", "36", "44", "32", "11.5"],
+      ];
+    }
     sizeChartNote = "Bottomwear sizes match standard waist measurements in inches.";
   } else if (isTopsOrShirts) {
-    sizeChartHeaders = ["Size", "Bust (in)", "Waist (in)", "Sleeve (in)", "Length (in)"];
+    sizeChartHeaders = ["Size", chestOrBustHeader, "Waist (in)", "Sleeve (in)", "Length (in)"];
     sizeChartRows = [
       ["XS", "31-32", "25-26", "23.0", "24.5"],
       ["S", "33-34", "27-28", "23.5", "25.0"],
@@ -186,7 +227,7 @@ export default function ProductDetailClient({ product }: Props) {
     sizeChartNote = "Measurements are in inches and refer to body dimensions. Tops are designed for a standard torso fit.";
   } else {
     // Default Longwear / Dresses / Kaftans / Kurtas size chart
-    sizeChartHeaders = ["Size", "Bust (in)", "Waist (in)", "Hip (in)", "Length (in)"];
+    sizeChartHeaders = ["Size", chestOrBustHeader, "Waist (in)", "Hip (in)", "Length (in)"];
     sizeChartRows = [
       ["XS", "31-32", "25-26", "34-35", "52"],
       ["S", "33-34", "27-28", "36-37", "53"],
@@ -345,9 +386,31 @@ export default function ProductDetailClient({ product }: Props) {
             {/* Rating */}
             <div className="flex items-center gap-3">
               <div className="flex gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className={`h-4 w-4 ${i < Math.floor(product.rating) ? "fill-[var(--gold)] text-[var(--gold)]" : "text-[var(--border)]"}`} />
-                ))}
+                <svg width="0" height="0" className="absolute pointer-events-none">
+                  <defs>
+                    <linearGradient id="detailHalfStarGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="50%" stopColor="var(--gold, #f59e0b)" />
+                      <stop offset="50%" stopColor="#e5e7eb" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const full = product.rating >= star - 0.25;
+                  const half = !full && product.rating >= star - 0.75;
+                  return (
+                    <Star
+                      key={star}
+                      className={`h-4 w-4 ${
+                        full
+                          ? "fill-[var(--gold)] text-[var(--gold)]"
+                          : half
+                          ? "text-[var(--gold)]"
+                          : "text-gray-200 fill-none"
+                      }`}
+                      style={half ? { fill: "url(#detailHalfStarGrad)" } : undefined}
+                    />
+                  );
+                })}
               </div>
               <span className="text-sm font-body font-medium text-[var(--charcoal)]">{product.rating}</span>
               <span className="text-sm font-body text-[var(--muted)]">({product.reviewCount} reviews)</span>
@@ -356,9 +419,9 @@ export default function ProductDetailClient({ product }: Props) {
 
             {/* Price */}
             <div className="flex items-baseline gap-3">
-              <span className="font-display text-4xl font-medium text-[var(--charcoal)]">{fmt(effectivePrice)}</span>
+              <Price amount={effectivePrice} className="font-display text-4xl font-medium text-[var(--charcoal)]" />
               {product.compareAtPrice && (
-                <span className="text-xl font-body text-[var(--muted)] line-through">{fmt(product.compareAtPrice)}</span>
+                <Price amount={product.compareAtPrice} className="text-xl font-body text-[var(--muted)] line-through" />
               )}
             </div>
 
@@ -375,7 +438,14 @@ export default function ProductDetailClient({ product }: Props) {
                   <button
                     key={v.color}
                     title={v.color}
-                    onClick={() => { setSelectedColor(v.color); setSelectedSize(""); }}
+                    onClick={() => {
+                      setSelectedColor(v.color);
+                      setSelectedSize("");
+                      const idx = uniqueColors.findIndex((c) => c.color === v.color);
+                      if (idx >= 0 && idx < product.images.length) {
+                        setSelectedImg(idx);
+                      }
+                    }}
                     className={`relative h-9 w-9 rounded-full border-2 transition-all hover:scale-110 ${
                       selectedColor === v.color ? "border-[var(--rose)] scale-110 shadow-md" : "border-[var(--border)]"
                     }`}
@@ -395,7 +465,12 @@ export default function ProductDetailClient({ product }: Props) {
             {sizesForColor.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-body font-semibold text-[var(--charcoal)] uppercase tracking-wider">Size</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-body font-semibold text-[var(--charcoal)] uppercase tracking-wider">Size</p>
+                    <span className="text-xs font-body text-[var(--muted)]">
+                      ({sizesForColor.reduce((s, v) => s + v.stock, 0)} available items)
+                    </span>
+                  </div>
                   {needsSizeGuide && (
                     <button
                       onClick={() => setSizeChart(true)}
@@ -405,29 +480,44 @@ export default function ProductDetailClient({ product }: Props) {
                     </button>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {sizesForColor.map((v) => (
-                    <button
-                      key={v.size}
-                      onClick={() => setSelectedSize(v.size)}
-                      disabled={v.stock === 0}
-                      className={`px-4 py-2.5 rounded-xl border text-sm font-body font-medium transition-all relative ${
-                        selectedSize === v.size
-                          ? "border-[var(--charcoal)] bg-[var(--charcoal)] text-white"
-                          : v.stock === 0
-                          ? "border-[var(--border)] text-[var(--muted)] cursor-not-allowed line-through bg-[var(--cream-dark)]"
-                          : "border-[var(--border)] text-[var(--charcoal)] hover:border-[var(--charcoal)]"
-                      }`}
-                    >
-                      {v.size}
-                      {v.stock > 0 && v.stock <= 4 && selectedSize !== v.size && (
-                        <span className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 bg-[var(--rose)] rounded-full" title={`Only ${v.stock} left`} />
-                      )}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap gap-2.5">
+                  {sizesForColor.map((v) => {
+                    const isSelected = selectedSize === v.size;
+                    const isOut = v.stock === 0;
+                    const isLow = v.stock > 0 && v.stock <= 5;
+
+                    return (
+                      <button
+                        key={v.size}
+                        onClick={() => setSelectedSize(v.size)}
+                        disabled={isOut}
+                        className={`px-3.5 py-2 rounded-xl border transition-all flex flex-col items-center justify-center min-w-[4.25rem] text-center ${
+                          isSelected
+                            ? "border-[var(--charcoal)] bg-[var(--charcoal)] text-white shadow-md scale-105"
+                            : isOut
+                            ? "border-[var(--border)] text-[var(--muted)] cursor-not-allowed bg-[var(--cream-dark)] opacity-60"
+                            : "border-[var(--border)] text-[var(--charcoal)] hover:border-[var(--charcoal)] bg-white"
+                        }`}
+                      >
+                        <span className={`font-semibold text-sm ${isOut ? "line-through" : ""}`}>{v.size}</span>
+                        <span className={`text-[10px] font-medium leading-none mt-1 ${
+                          isSelected ? "text-white/80" : isOut ? "text-red-400" : isLow ? "text-amber-600 font-bold" : "text-emerald-600"
+                        }`}>
+                          {isOut ? "Sold Out" : isLow ? `Only ${v.stock} left` : `${v.stock} in stock`}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
-                {selectedSize && stockLevel <= 5 && stockLevel > 0 && (
-                  <p className="mt-2 text-xs font-body text-[var(--rose)] font-medium">Only {stockLevel} left — order soon!</p>
+                {selectedSize && selectedVariant && (
+                  <div className="mt-3.5 p-3 rounded-xl bg-white border border-[var(--border)] text-xs font-body flex items-center justify-between">
+                    <span className="text-[var(--charcoal-mid)]">
+                      Selected Size <strong className="text-[var(--charcoal)]">{selectedSize}</strong> ({selectedColor})
+                    </span>
+                    <span className={stockLevel > 5 ? "text-emerald-600 font-semibold" : stockLevel > 0 ? "text-amber-600 font-bold" : "text-red-500 font-semibold"}>
+                      {stockLevel > 5 ? `In Stock (${stockLevel} units available)` : stockLevel > 0 ? `Hurry! Only ${stockLevel} units left` : "Out of stock"}
+                    </span>
+                  </div>
                 )}
               </div>
             )}

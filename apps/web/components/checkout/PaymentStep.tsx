@@ -101,9 +101,7 @@ export default function PaymentStep({ address, payment, onPaymentChange, onBack,
     }
   };
 
-  const PaymentCard = ({ id, title, desc, icon: Icon }: {
-    id: "cod" | "card"; title: string; desc: string; icon: React.FC<{ className?: string }>;
-  }) => (
+  const renderPaymentCard = (id: "cod" | "card", title: string, desc: string, Icon: React.FC<{ className?: string }>) => (
     <div
       onClick={() => onPaymentChange(id)}
       className={`p-5 rounded-xl border cursor-pointer transition-all flex items-center gap-4 ${
@@ -135,8 +133,8 @@ export default function PaymentStep({ address, payment, onPaymentChange, onBack,
       <div className="lg:col-span-3 space-y-4">
         <h2 className="font-display text-xl font-medium text-[var(--charcoal)]">Payment Method</h2>
 
-        <PaymentCard id="cod"  title="Cash on Delivery"   desc="Pay when your order arrives. No extra charges." icon={Truck} />
-        <PaymentCard id="card" title="Credit / Debit Card" desc="Powered by Stripe. 256-bit SSL encrypted." icon={CreditCard} />
+        {renderPaymentCard("cod",  "Cash on Delivery",   "Pay when your order arrives. No extra charges.", Truck)}
+        {renderPaymentCard("card", "Credit / Debit Card", "Powered by Stripe. 256-bit SSL encrypted.", CreditCard)}
 
         {/* Card form (placeholder for Stripe Elements) */}
         {payment === "card" && (

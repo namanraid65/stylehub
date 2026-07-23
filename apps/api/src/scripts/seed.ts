@@ -16,6 +16,7 @@ import User     from '../models/User';
 import CmsPage  from '../models/CmsPage';
 import Banner   from '../models/Banner';
 import Order    from '../models/Order';
+import Review   from '../models/Review';
 
 const Cat = Category;
 const Prod = Product;
@@ -28,11 +29,11 @@ const sku  = (prefix: string, i: number) => `${prefix}-${String(i).padStart(4, '
 const FASHION_IMAGES = {
   anarkali:    ['https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800','https://images.unsplash.com/photo-1614251056798-0a63eda2bb25?w=800'],
   lehenga:     ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800','https://images.unsplash.com/photo-1591093803775-fc1b9c4fa61b?w=800'],
-  saree:       ['https://images.unsplash.com/photo-1617627143233-f95b7fce1b3f?w=800','https://images.unsplash.com/photo-1583391733987-e2c4b7290c3a?w=800'],
+  saree:       ['https://images.unsplash.com/photo-1617627143233-f95b7fce1b3f?w=800','https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800'],
   kurta:       ['https://images.unsplash.com/photo-1564463836146-4e30522c2984?w=800','https://images.unsplash.com/photo-1614251056818-9d1e71a685bb?w=800'],
   dress:       ['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=800','https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800'],
   coord:       ['https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800','https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800'],
-  kaftan:      ['https://images.unsplash.com/photo-1583391733987-e2c4b7290c3a?w=800','https://images.unsplash.com/photo-1617627143233-f95b7fce1b3f?w=800'],
+  kaftan:      ['https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800','https://images.unsplash.com/photo-1617627143233-f95b7fce1b3f?w=800'],
   top:         ['https://images.unsplash.com/photo-1533659124865-d6072dc035e1?w=800','https://images.unsplash.com/photo-1562157873-818bc0726f68?w=800'],
   jeans:       ['https://images.unsplash.com/photo-1542272604-787c3835535d?w=800','https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800'],
   heels:       ['https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=800','https://images.unsplash.com/photo-1515347619252-60a4bf4fff4f?w=800'],
@@ -101,16 +102,21 @@ async function seed() {
     { name: 'Accessories',  slug: 'accessories', description: 'Bags, jewellery, scarves and belts',      image: FASHION_IMAGES.jewellery[0],order: 6 },
     { name: 'Co-ord Sets',  slug: 'coord-sets',  description: 'Matching two and three piece sets',       image: FASHION_IMAGES.coord[0],    order: 7 },
     { name: 'Kaftans',      slug: 'kaftans',     description: 'Relaxed kaftans and lounge wear',         image: FASHION_IMAGES.kaftan[0],   order: 8 },
+    { name: 'Shirts',       slug: 'shirts',      description: 'Formal and casual shirts and overshirts', image: FASHION_IMAGES.menShirt[0], order: 9 },
   ]);
-  const [ethnic, dresses, tops, denim, footwear, accessories, coords, kaftans] = categories;
+  const [ethnic, dresses, tops, denim, footwear, accessories, coords, kaftans, shirts] = categories;
   console.log(`✅ Seeded ${categories.length} categories`);
 
-  const vendorUserId = new mongoose.Types.ObjectId();
+  const dcUserId = new mongoose.Types.ObjectId();
+  const utUserId = new mongoose.Types.ObjectId();
+  const smUserId = new mongoose.Types.ObjectId();
+  const gcUserId = new mongoose.Types.ObjectId();
+  const vrUserId = new mongoose.Types.ObjectId();
 
   // ── Vendors ───────────────────────────────────────────────────────────────
   const vendors = await Vendor.insertMany([
     { 
-      user: vendorUserId, 
+      user: dcUserId, 
       storeName: 'DesiCouture', 
       storeSlug: 'desicouture', 
       storeLogo: FASHION_IMAGES.anarkali[0], 
@@ -122,7 +128,7 @@ async function seed() {
       status: 'approved',
     },
     { 
-      user: new mongoose.Types.ObjectId(), 
+      user: utUserId, 
       storeName: 'UrbanThreads', 
       storeSlug: 'urbanthreads', 
       storeLogo: FASHION_IMAGES.dress[0], 
@@ -134,7 +140,7 @@ async function seed() {
       status: 'approved',
     },
     { 
-      user: new mongoose.Types.ObjectId(), 
+      user: smUserId, 
       storeName: 'SoleMate', 
       storeSlug: 'solemate', 
       storeLogo: FASHION_IMAGES.heels[0], 
@@ -146,7 +152,7 @@ async function seed() {
       status: 'approved',
     },
     { 
-      user: new mongoose.Types.ObjectId(), 
+      user: gcUserId, 
       storeName: 'GlimmerCo', 
       storeSlug: 'glimmerco', 
       storeLogo: FASHION_IMAGES.jewellery[0], 
@@ -158,7 +164,7 @@ async function seed() {
       status: 'approved',
     },
     { 
-      user: new mongoose.Types.ObjectId(), 
+      user: vrUserId, 
       storeName: 'VelveteenRose', 
       storeSlug: 'velveteen-rose', 
       storeLogo: FASHION_IMAGES.top[0], 
@@ -197,7 +203,7 @@ async function seed() {
     {
       name: 'Breezy Classic Linen Shirt', slug: 'breezy-classic-linen-shirt',
       sku: sku('UT', 1), description: 'Breezy and comfortable white linen shirt with a classic collar. Perfect for everyday casual wear.',
-      category: tops._id, vendor: ut._id, images: FASHION_IMAGES.menShirt,
+      category: shirts._id, vendor: ut._id, images: FASHION_IMAGES.menShirt,
       basePrice: 2199, discountPct: 0, tags: ['shirt','linen','men','casual'],
       material: '100% Pure Linen', careInstructions: 'Machine wash cold. Warm iron.',
       rating: 4.8, reviewCount: 128, isFeatured: true, isNew: true, isTrending: true,
@@ -277,7 +283,7 @@ async function seed() {
     {
       name: 'Heavyweight Canvas Utility Overshirt', slug: 'heavyweight-canvas-utility-overshirt',
       sku: sku('UT', 6), description: 'Rugged shirt-jacket with double chest pockets and heavy-duty button closures. Versatile seasonal layering.',
-      category: tops._id, vendor: ut._id, images: FASHION_IMAGES.menShirt,
+      category: shirts._id, vendor: ut._id, images: FASHION_IMAGES.menShirt,
       basePrice: 2399, discountPct: 10, tags: ['shirt','overshirt','men','layering'],
       material: '100% Heavy Cotton Canvas', careInstructions: 'Machine wash warm. Tumble dry medium.',
       rating: 4.6, reviewCount: 110, isFeatured: false, isNew: false, isTrending: true,
@@ -343,7 +349,7 @@ async function seed() {
     {
       name: 'Oversized Pure Linen Shirt', slug: 'oversized-pure-linen-shirt',
       sku: sku('VR', 1), description: 'Oversized linen shirt in sage green. Wear open as a jacket or buttoned up. Versatile wardrobe essential.',
-      category: tops._id, vendor: vr._id, images: FASHION_IMAGES.top,
+      category: shirts._id, vendor: vr._id, images: FASHION_IMAGES.top,
       basePrice: 1799, discountPct: 0, tags: ['top','linen','shirt','versatile'],
       material: '100% Linen', careInstructions: 'Machine wash cold.',
       rating: 4.7, reviewCount: 203, isFeatured: true, isNew: false, isTrending: true,
@@ -409,7 +415,7 @@ async function seed() {
     {
       name: 'Mandarin Collar Cotton Linen Shirt', slug: 'mandarin-collar-cotton-linen-shirt',
       sku: sku('UT', 11), description: 'Smart linen shirt for boys with high mandarin collar. Light, airy, and styled for warm afternoons.',
-      category: tops._id, vendor: ut._id, images: FASHION_IMAGES.menShirt,
+      category: shirts._id, vendor: ut._id, images: FASHION_IMAGES.menShirt,
       basePrice: 1199, discountPct: 0, tags: ['shirt','linen','boys','smart-casual'],
       material: '60% Linen, 40% Cotton', careInstructions: 'Machine wash gentle. Warm iron.',
       rating: 4.7, reviewCount: 54, isFeatured: false, isNew: true, isTrending: false,
@@ -888,7 +894,7 @@ async function seed() {
     {
       name: 'Oversized Denim Overshirt', slug: 'oversized-denim-overshirt',
       sku: sku('UT', 23), description: 'Relaxed-fit overshirt in medium wash durable cotton denim. Classic button-down style for layering.',
-      category: denim._id, vendor: ut._id, images: ['https://images.unsplash.com/photo-1542272604-787c3835535d?w=800'],
+      category: shirts._id, vendor: ut._id, images: ['https://images.unsplash.com/photo-1542272604-787c3835535d?w=800'],
       basePrice: 2499, discountPct: 0, tags: ['denim','shirt','unisex','oversized','layering'],
       material: '100% Cotton Denim', careInstructions: 'Machine wash cold inside out.',
       rating: 4.6, reviewCount: 64, isFeatured: false, isNew: false, isTrending: true,
@@ -939,14 +945,58 @@ async function seed() {
     else if (p.vendor === gc._id) brand = 'GlimmerCo';
     else if (p.vendor === vr._id) brand = 'VelveteenRose';
 
-    const totalStock = (p.variants || []).reduce((sum, v) => sum + (v.stock || 0), 0);
+    const totalStock = (p.variants || []).reduce((sum: number, v: any) => sum + (v.stock || 0), 0);
+
+    const fs = require('fs');
+    const path = require('path');
+    const targetDir = path.join(__dirname, '../../../web/public/images/products');
+    const localMain = `/images/products/${p.slug}.png`;
+    const fullMainPath = path.join(targetDir, `${p.slug}.png`);
+
+    let productImages: string[] = [];
+    if (fs.existsSync(fullMainPath)) {
+      productImages.push(localMain);
+    }
+
+    if (p.variants) {
+      const colors = Array.from(new Set(p.variants.map((v: any) => v.color.toLowerCase())));
+      colors.forEach((c: any) => {
+        const altFile = `${p.slug}-${c}.png`;
+        const fullPath = path.join(targetDir, altFile);
+        const altUrl = `/images/products/${altFile}`;
+        if (fs.existsSync(fullPath) && !productImages.includes(altUrl)) {
+          productImages.push(altUrl);
+        }
+      });
+    }
+
+    if (productImages.length === 0 && p.images && p.images.length > 0) {
+      productImages = p.images;
+    }
+
+    const variants = (p.variants || []).map((v: any) => {
+      const colorName = (v.color || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const cand1 = `${p.slug}-${colorName}.png`;
+      const cand2 = `${colorName}-${p.slug}.png`;
+      let varImg = v.image;
+      if (!varImg && fs.existsSync(path.join(targetDir, cand1))) {
+        varImg = `/images/products/${cand1}`;
+      } else if (!varImg && fs.existsSync(path.join(targetDir, cand2))) {
+        varImg = `/images/products/${cand2}`;
+      }
+      return {
+        ...v,
+        images: varImg ? [varImg] : (v.images || []),
+      };
+    });
 
     return {
       ...p,
       brand,
       gender: p.gender || 'women',
       status: 'active',
-      images: [`/images/products/${p.slug}.png`],
+      images: productImages,
+      variants,
       totalStock,
       soldCount: 0,
     };
@@ -955,15 +1005,39 @@ async function seed() {
   const products = await Prod.insertMany(processedProducts);
   console.log(`✅ Seeded ${products.length} products`);
 
-  // ── Admin user ────────────────────────────────────────────────────────────
+  // ── Admin & Vendor Users ───────────────────────────────────────────────────
   await User.create({
     name: 'Admin User', email: 'admin@stylehub.in',
     passwordHash: 'password123',
     role: 'admin',
   });
   await User.create({
-    _id: vendorUserId,
+    _id: dcUserId,
     name: 'DesiCouture Vendor', email: 'vendor@desicouture.in',
+    passwordHash: 'password123',
+    role: 'vendor',
+  });
+  await User.create({
+    _id: utUserId,
+    name: 'UrbanThreads Vendor', email: 'vendor@urbanthreads.in',
+    passwordHash: 'password123',
+    role: 'vendor',
+  });
+  await User.create({
+    _id: smUserId,
+    name: 'SoleMate Vendor', email: 'vendor@solemate.in',
+    passwordHash: 'password123',
+    role: 'vendor',
+  });
+  await User.create({
+    _id: gcUserId,
+    name: 'GlimmerCo Vendor', email: 'vendor@glimmerco.in',
+    passwordHash: 'password123',
+    role: 'vendor',
+  });
+  await User.create({
+    _id: vrUserId,
+    name: 'VelveteenRose Vendor', email: 'vendor@velveteenrose.in',
     passwordHash: 'password123',
     role: 'vendor',
   });
@@ -987,7 +1061,7 @@ async function seed() {
     passwordHash: 'password123',
     role: 'customer',
   });
-  console.log('✅ Seeded users (admin, vendor + 4 customers)');
+  console.log('✅ Seeded 10 users (1 admin, 5 vendors, 4 customers)');
 
   // ── CMS Homepage ──────────────────────────────────────────────────────────
   await CmsPage.create({
@@ -1186,13 +1260,14 @@ async function seed() {
   const kurtaProduct = products.find((p) => p.name === 'Mustard Block Print Kurta Set');
   const shararaProduct = products.find((p) => p.name === 'Rose Gold Sharara Set');
 
+  let seededOrders: any[] = [];
   if (sareeProduct && dressProduct && anarkaliProduct && kurtaProduct && shararaProduct && dcVendor && utVendor) {
     const cust1 = await User.findOne({ email: 'aarav@gmail.com' });
     const cust2 = await User.findOne({ email: 'priya@gmail.com' });
     const cust3 = await User.findOne({ email: 'ananya@gmail.com' });
     const cust4 = await User.findOne({ email: 'karan@gmail.com' });
 
-    const seededOrders = await Order.create([
+    seededOrders = await Order.create([
       {
         orderNumber: 'SH-202607-0001',
         customer: cust1?._id,
@@ -1401,6 +1476,80 @@ async function seed() {
     console.log('✅ Synced product soldCounts with seeded orders');
   }
 
+  // ── Seed Reviews for each product and sync ratings ───────────────────────
+  const REVIEW_TEMPLATES = [
+    { rating: 5, title: 'Stunning quality & fast delivery!', body: 'The fabric quality is incredible. Fitting is spot on and the color matches the pictures perfectly! Will definitely order again.' },
+    { rating: 5, title: 'Loved it!', body: 'Ordered this for a festive event and got so many compliments. Gorgeous embroidery and clean finishing.' },
+    { rating: 4, title: 'Very good piece', body: 'Overall very satisfied with the purchase. Premium fabric and great design. Delivery took 3 days.' },
+    { rating: 4, title: 'Elegant design', body: 'Nice fitting and premium feel. Looks very stylish in person. Worth every rupee.' },
+    { rating: 3, title: 'Decent quality', body: 'Looks good and lightweight. Fabric is slightly thinner than expected, but fine for daily wear.' },
+    { rating: 5, title: 'Exceeded expectations!', body: 'Brilliant craftsmanship and fast shipping. Packaging was very neat and elegant.' },
+  ];
+
+  const customerUsers = await User.find({ role: 'customer' });
+  let totalReviewsCreated = 0;
+
+  for (let pIdx = 0; pIdx < products.length; pIdx++) {
+    const prod = products[pIdx]!;
+    const reviewCountForProd = 3 + (pIdx % 3); // 3, 4, or 5 reviews
+    let sumRating = 0;
+
+    for (let r = 0; r < reviewCountForProd; r++) {
+      const template = REVIEW_TEMPLATES[(pIdx + r) % REVIEW_TEMPLATES.length]!;
+      const cust = customerUsers.length > 0 ? customerUsers[r % customerUsers.length] : null;
+      const custId = cust ? cust._id : new mongoose.Types.ObjectId();
+      const orderId = (seededOrders.length > 0 ? seededOrders[r % seededOrders.length]!._id : new mongoose.Types.ObjectId()) as mongoose.Types.ObjectId;
+
+      await Review.create({
+        product: prod._id,
+        customer: custId,
+        vendor: prod.vendor,
+        order: orderId,
+        rating: template.rating,
+        title: template.title,
+        body: template.body,
+        isVerified: true,
+        isApproved: true,
+        helpfulVotes: (r + 1) * 4,
+      });
+
+      sumRating += template.rating;
+      totalReviewsCreated++;
+    }
+
+    const calculatedAvg = Math.round((sumRating / reviewCountForProd) * 10) / 10;
+    await Prod.findByIdAndUpdate(prod._id, {
+      $set: {
+        avgRating: calculatedAvg,
+        reviewCount: reviewCountForProd,
+      },
+    });
+  }
+  console.log(`✅ Seeded ${totalReviewsCreated} reviews across all products & synced avgRatings`);
+
+  // Sync vendor ratings
+  for (const vendor of vendors) {
+    const vendorProds = await Prod.find({ vendor: vendor._id });
+    let totalProdReviews = 0;
+    let totalRatingSum = 0;
+
+    for (const vp of vendorProds) {
+      if (vp.reviewCount > 0) {
+        totalProdReviews += vp.reviewCount;
+        totalRatingSum += vp.avgRating * vp.reviewCount;
+      }
+    }
+
+    const vendorAvg = totalProdReviews > 0 ? Math.round((totalRatingSum / totalProdReviews) * 10) / 10 : 4.5;
+    await Vendor.findByIdAndUpdate(vendor._id, {
+      $set: {
+        rating: vendorAvg,
+        reviewCount: totalProdReviews,
+      },
+    });
+  }
+  console.log(`✅ Synced vendor ratings and review counts`);
+
   await mongoose.disconnect();
   console.log('\n🎉 Seed complete! Summary:');
   console.log(`   📦 ${categories.length} categories`);
@@ -1408,7 +1557,13 @@ async function seed() {
   console.log(`   👗 ${products.length} products (with variants)`);
   console.log(`   📄 5 CMS pages (homepage, about, contact, returns, privacy)`);
   console.log(`   🖼️  3 banners`);
-  console.log(`   👤 2 users (admin@stylehub.in + vendor@desicouture.in)`);
+  console.log(`   👤 10 users (1 admin + 5 vendors + 4 customers)`);
+  console.log(`      • Admin: admin@stylehub.in`);
+  console.log(`      • DesiCouture: vendor@desicouture.in`);
+  console.log(`      • UrbanThreads: vendor@urbanthreads.in`);
+  console.log(`      • SoleMate: vendor@solemate.in`);
+  console.log(`      • GlimmerCo: vendor@glimmerco.in`);
+  console.log(`      • VelveteenRose: vendor@velveteenrose.in`);
   console.log(`   🔑 Default password: password123`);
 }
 

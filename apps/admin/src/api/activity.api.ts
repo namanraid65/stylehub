@@ -32,7 +32,7 @@ const activityApi = {
     apiClient.get<{ logs: ActivityLog[]; total: number }>('/activity', { params }),
 
   summary: () =>
-    apiClient.get<{ data: ActivitySummaryEntry[] }>('/activity/summary'),
+    apiClient.get<{ summary: ActivitySummaryEntry[]; data?: ActivitySummaryEntry[] }>('/activity/summary'),
 };
 
 export default activityApi;

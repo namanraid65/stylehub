@@ -511,13 +511,11 @@ function ContactFormBlock() {
     setLoading(true);
     try {
       const token = localStorage.getItem('stylehub-token');
-      const userId = localStorage.getItem('stylehub-user-id');
       const res = await fetch(`${API}/enquiries`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(userId ? { 'x-user-id': userId } : {}),
         },
         body: JSON.stringify({
           name,

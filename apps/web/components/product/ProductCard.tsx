@@ -2,14 +2,56 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Heart, Star, ShoppingBag } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import type { Product } from "@/lib/mock-data";
 import { useCartStore } from "@/lib/stores/cart.store";
 import { useWishlistStore } from "@/lib/stores/wishlist.store";
-
+import { Price } from "@/components/ui/Price";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
+
+function StarRating({ rating, size = "h-3.5 w-3.5" }: { rating: number; size?: string }) {
+  const rawId = useId();
+  const uid = rawId.replace(/:/g, "");
+
+  return (
+    <div className="flex items-center gap-0.5">
+      <svg width="0" height="0" className="absolute pointer-events-none" aria-hidden="true">
+        <defs>
+          {[1, 2, 3, 4, 5].map((star) => {
+            const fillPct = Math.max(0, Math.min(100, Math.round((rating - (star - 1)) * 100)));
+            return (
+              <linearGradient key={star} id={`sg-${uid}-${star}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset={`${fillPct}%`} stopColor="var(--gold, #f59e0b)" />
+                <stop offset={`${fillPct}%`} stopColor="#e5e7eb" />
+              </linearGradient>
+            );
+          })}
+        </defs>
+      </svg>
+      {[1, 2, 3, 4, 5].map((star) => {
+        const fillPct = Math.max(0, Math.min(100, Math.round((rating - (star - 1)) * 100)));
+        const isFull = fillPct === 100;
+        const isEmpty = fillPct === 0;
+
+        return (
+          <Star
+            key={star}
+            className={`${size} ${
+              isFull
+                ? "fill-[var(--gold)] text-[var(--gold)]"
+                : isEmpty
+                ? "text-gray-200 fill-none"
+                : "text-[var(--gold)]"
+            }`}
+            style={!isFull && !isEmpty ? { fill: `url(#sg-${uid}-${star})` } : undefined}
+          />
+        );
+      })}
+    </div>
+  );
+}
 
 export default function ProductCard({ product }: { product: Product }) {
   const { addItem }                       = useCartStore();
@@ -81,12 +123,17 @@ export default function ProductCard({ product }: { product: Product }) {
         {/* Wishlist */}
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWish(product.id); }}
-          className="absolute top-3 right-3 p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white transition-colors opacity-0 group-hover:opacity-100"
+          className={`absolute top-3 right-3 z-10 p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-md hover:bg-white hover:scale-110 transition-all ${
+            wished ? "opacity-100 shadow-rose-200/50" : "opacity-0 group-hover:opacity-100"
+          }`}
+          aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
+          title={wished ? "Remove from wishlist" : "Add to wishlist"}
         >
-          <Heart className={`h-3.5 w-3.5 transition-colors ${
-            wished ? "fill-[var(--rose)] text-[var(--rose)]" : "text-[var(--charcoal-mid)]"
+          <Heart className={`h-4 w-4 transition-all ${
+            wished ? "fill-[var(--rose)] text-[var(--rose)] scale-105" : "text-[var(--charcoal-mid)]"
           }`} />
         </button>
+
 
         {/* Quick actions overlay */}
         <div className="absolute inset-x-0 bottom-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
@@ -132,24 +179,27 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
         )}
 
-        {/* Price + Rating */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-base font-body font-semibold text-[var(--charcoal)]">{fmt(product.basePrice)}</span>
-            {product.compareAtPrice && (
-              <span className="text-xs font-body text-[var(--muted)] line-through">{fmt(product.compareAtPrice)}</span>
-            )}
-          </div>
-          <div className="flex items-center gap-1">
-            {product.reviewCount > 0 ? (
-              <>
-                <Star className="h-3 w-3 fill-[var(--gold)] text-[var(--gold)]" />
-                <span className="text-xs font-body text-[var(--charcoal-mid)]">{product.rating.toFixed(1)}</span>
-              </>
-            ) : (
-              <span className="text-[10px] font-body text-[var(--muted)] italic">No ratings yet</span>
-            )}
-          </div>
+        {/* Price */}
+        <div className="flex items-baseline gap-1.5 mb-1.5">
+          <Price amount={product.basePrice} className="text-base font-body font-semibold text-[var(--charcoal)]" />
+          {product.compareAtPrice && (
+            <Price amount={product.compareAtPrice} className="text-xs font-body text-[var(--muted)] line-through" />
+          )}
+        </div>
+
+        {/* Amazon-style 5-star rating with half-star shading */}
+        <div className="flex items-center gap-1">
+          {product.reviewCount > 0 ? (
+            <div className="flex items-center gap-1">
+              <StarRating rating={product.rating} />
+              <span className="text-xs font-body font-semibold text-slate-700 ml-1">
+                {product.rating.toFixed(1)}
+              </span>
+              <span className="text-[11px] font-body text-slate-400">({product.reviewCount})</span>
+            </div>
+          ) : (
+            <span className="text-[10px] font-body text-slate-400 italic">No ratings yet</span>
+          )}
         </div>
       </div>
     </Link>

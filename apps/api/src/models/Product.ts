@@ -11,6 +11,7 @@ export interface IVariantDoc {
   price?: number;           // Overrides basePrice if set
   compareAtPrice?: number;
   stock: number;
+  minStockThreshold?: number;
   images: string[];
   weight?: number;          // grams
   barcode?: string;
@@ -31,6 +32,7 @@ const VariantSchema = new Schema<IVariantDoc>(
     price:         { type: Number, min: 0 },
     compareAtPrice:{ type: Number, min: 0 },
     stock:         { type: Number, required: true, min: 0, default: 0 },
+    minStockThreshold: { type: Number, default: 5, min: 0 },
     images:        { type: [String], default: [] },
     weight:        { type: Number, min: 0 },
     barcode:       { type: String, trim: true },
@@ -63,6 +65,7 @@ export interface IProductDoc extends Document {
   currency: string;
   variants: IVariantDoc[];
   totalStock: number;
+  minStockThreshold?: number;
   soldCount: number;
   avgRating: number;
   reviewCount: number;
@@ -132,10 +135,11 @@ const ProductSchema = new Schema<IProductDoc>(
     variants: { type: [VariantSchema], default: [] },
 
     // ── Denormalised aggregates (updated by hooks) ───────────────────────────
-    totalStock:  { type: Number, default: 0, min: 0 },
-    soldCount:   { type: Number, default: 0, min: 0 },
-    avgRating:   { type: Number, default: 0, min: 0, max: 5 },
-    reviewCount: { type: Number, default: 0, min: 0 },
+    totalStock:        { type: Number, default: 0, min: 0 },
+    minStockThreshold: { type: Number, default: 5, min: 0 },
+    soldCount:         { type: Number, default: 0, min: 0 },
+    avgRating:         { type: Number, default: 0, min: 0, max: 5 },
+    reviewCount:       { type: Number, default: 0, min: 0 },
 
     status: {
       type: String,
@@ -164,10 +168,10 @@ ProductSchema.virtual('isInStock').get(function (this: IProductDoc) {
 });
 
 // ─── Pre-save: sync totalStock from variants ──────────────────────────────────
-ProductSchema.pre('save', function (next) {
+ProductSchema.pre('save', function (this: IProductDoc, next) {
   if (this.isModified('variants')) {
-    this.totalStock = this.variants.reduce(
-      (sum, v) => sum + (v.isActive ? v.stock : 0),
+    this.totalStock = (this.variants || []).reduce(
+      (sum: number, v: IVariantDoc) => sum + (v.isActive ? v.stock : 0),
       0,
     );
   }

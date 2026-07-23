@@ -11,6 +11,7 @@ import User from '../models/User';
 import Enquiry from '../models/Enquiry';
 import Review from '../models/Review';
 import { sendOrderConfirmationEmail } from '../services/email.service';
+import { validateCoupon } from '../services/coupon.service';
 
 const router = Router();
 
@@ -128,18 +129,10 @@ router.post('/',
       const data        = parsed.data;
       const orderNumber = await generateOrderNumber();
 
-      // Build sub-order status per fulfillment
-      const fulfillments = data.fulfillments.map((f) => ({
-        ...f,
-        status:    'placed' as const,
-        createdAt: new Date(),
-      }));
-
+      // Determine customer identity strictly (never trust raw x-user-id header)
       let customerId: mongoose.Types.ObjectId | undefined = undefined;
       if (req.user?._id) {
         customerId = new mongoose.Types.ObjectId(req.user._id);
-      } else if (req.headers['x-user-id'] && mongoose.isValidObjectId(req.headers['x-user-id'] as string)) {
-        customerId = new mongoose.Types.ObjectId(req.headers['x-user-id'] as string);
       } else if (data.guestEmail) {
         let user = await User.findOne({ email: data.guestEmail.toLowerCase() });
         if (!user) {
@@ -154,6 +147,101 @@ router.post('/',
         customerId = user._id;
       }
 
+      // Re-fetch product prices from DB and verify stock availability
+      let recomputedSubtotal = 0;
+      let recomputedDelivery = 0;
+      const verifiedFulfillments = [];
+      const stockUpdatesToApply: Array<{ product: any; variant: any; quantity: number }> = [];
+
+      for (const group of data.fulfillments) {
+        let fulfillmentSubtotal = 0;
+        const verifiedItems = [];
+
+        for (const item of group.items) {
+          if (!mongoose.isValidObjectId(item.productId)) {
+            res.status(400).json({ success: false, message: `Invalid product ID: ${item.productId}` });
+            return;
+          }
+          const product = await Product.findById(item.productId);
+          if (!product || product.status !== 'active') {
+            res.status(400).json({ success: false, message: `Product '${item.name}' is no longer available.` });
+            return;
+          }
+
+          // Find matching variant
+          const variant = (product.variants || []).find(
+            (v: any) => v.size === item.size && v.color === item.color
+          );
+
+          const availableStock = variant ? variant.stock : product.totalStock;
+          if (availableStock < item.quantity) {
+            res.status(400).json({
+              success: false,
+              message: `Insufficient stock for '${product.name}' (${item.size}/${item.color}). Requested: ${item.quantity}, Available: ${availableStock}`,
+            });
+            return;
+          }
+
+          // Use real unit price from database (variant price or product basePrice)
+          const verifiedUnitPrice = (variant && typeof variant.price === 'number' && variant.price > 0)
+            ? variant.price
+            : product.basePrice;
+
+          fulfillmentSubtotal += verifiedUnitPrice * item.quantity;
+          verifiedItems.push({
+            ...item,
+            price: verifiedUnitPrice,
+          });
+
+          stockUpdatesToApply.push({
+            product,
+            variant,
+            quantity: item.quantity,
+          });
+        }
+
+        recomputedSubtotal += fulfillmentSubtotal;
+        recomputedDelivery += group.delivery;
+
+        verifiedFulfillments.push({
+          ...group,
+          items: verifiedItems,
+          subtotal: fulfillmentSubtotal,
+          status: 'placed' as const,
+          createdAt: new Date(),
+        });
+      }
+
+      // Validate coupon server-side against recomputed subtotal
+      let recomputedDiscount = 0;
+      let verifiedCoupon = undefined;
+
+      if (data.coupon?.code) {
+        const couponResult = validateCoupon(data.coupon.code, recomputedSubtotal);
+        if (!couponResult.valid || !couponResult.coupon) {
+          res.status(400).json({ success: false, message: couponResult.message });
+          return;
+        }
+        recomputedDiscount = couponResult.discount;
+        verifiedCoupon = {
+          code: couponResult.coupon.code,
+          type: couponResult.coupon.type,
+          value: couponResult.coupon.value,
+          maxDiscount: couponResult.coupon.maxDiscount,
+        };
+      }
+
+      const recomputedTax = Math.round(Math.max(0, recomputedSubtotal - recomputedDiscount) * 0.18);
+      const recomputedTotal = Math.max(0, recomputedSubtotal - recomputedDiscount + recomputedTax + recomputedDelivery);
+
+      const verifiedTotals = {
+        subtotal: recomputedSubtotal,
+        discount: recomputedDiscount,
+        tax:      recomputedTax,
+        delivery: recomputedDelivery,
+        total:    recomputedTotal,
+      };
+
       const order = await Order.create({
         orderNumber,
         customer: customerId,
@@ -162,54 +250,40 @@ router.post('/',
           email: data.guestEmail,
         },
         address:       data.address,
-        fulfillments,
-        coupon:        data.coupon ?? undefined,
-        totals:        data.totals,
+        fulfillments:  verifiedFulfillments,
+        coupon:        verifiedCoupon,
+        totals:        verifiedTotals,
         paymentMethod: data.paymentMethod,
         paymentStatus: data.paymentMethod === 'card' ? 'paid' : 'pending',
         status:        'placed',
       });
 
-    // Update product stock and soldCount for each item in the order
-    for (const group of fulfillments) {
-      for (const item of group.items) {
-        if (!mongoose.isValidObjectId(item.productId)) {
-          continue;
+      // Update product stock and soldCount for verified items
+      for (const update of stockUpdatesToApply) {
+        const { product, variant, quantity } = update;
+        product.soldCount = (product.soldCount || 0) + quantity;
+        if (variant) {
+          variant.stock = Math.max(0, variant.stock - quantity);
         }
-        const product = await Product.findById(item.productId);
-        if (product) {
-          product.soldCount = (product.soldCount || 0) + item.quantity;
-          
-          // Find matching variant and decrement its stock
-          const variant = (product.variants || []).find(
-            (v: any) => v.size === item.size && v.color === item.color
-          );
-          if (variant) {
-            variant.stock = Math.max(0, variant.stock - item.quantity);
-          }
-          
-          // Recalculate totalStock
-          product.totalStock = (product.variants || []).reduce((sum: number, v: any) => sum + v.stock, 0);
-          await product.save();
-        }
+        product.totalStock = (product.variants || []).reduce((sum: number, v: any) => sum + v.stock, 0);
+        await product.save();
       }
+
+      // Dispatch order confirmation email mock in the background
+      sendOrderConfirmationEmail(order).catch((e) => console.error('[Order Email Dispatch Error]', e));
+
+      res.status(201).json({
+        success:     true,
+        orderId:     order._id,
+        orderNumber: order.orderNumber,
+        status:      order.status,
+        message:     'Order placed successfully!',
+      });
+    } catch (err: unknown) {
+      console.error('[Order Create Error]', err);
+      res.status(500).json({ success: false, message: 'Failed to create order.' });
     }
-
-    // Dispatch order confirmation email mock in the background
-    sendOrderConfirmationEmail(order).catch((e) => console.error('[Order Email Dispatch Error]', e));
-
-    res.status(201).json({
-      success:     true,
-      orderId:     order._id,
-      orderNumber: order.orderNumber,
-      status:      order.status,
-      message:     'Order placed successfully!',
-    });
-  } catch (err: unknown) {
-    console.error('[Order Create Error]', err);
-    res.status(500).json({ success: false, message: 'Failed to create order.' });
-  }
-});
+  });
 
 /**
  * GET /api/orders/vendor/stats

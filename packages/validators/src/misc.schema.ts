@@ -51,9 +51,9 @@ export type ReplyEnquiryInput = z.infer<typeof replyEnquirySchema>;
 export const createCategorySchema = z.object({
   name:           z.string().min(2).max(80).trim(),
   slug:           z.string().min(2).max(80).toLowerCase().trim().optional(),
-  parent:         z.string().optional(),
+  parent:         z.string().nullable().optional(),
   description:    z.string().max(500).optional(),
-  image:          z.string().url().optional(),
+  image:          z.string().optional(),
   isActive:       z.boolean().default(true),
   sortOrder:      z.number().int().min(0).default(0),
   seoTitle:       z.string().max(70).optional(),

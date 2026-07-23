@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle2, Loader2 } from 'lucide-react';
 
 const CONTACT_INFO = [
@@ -39,13 +40,11 @@ export default function ContactFormClient() {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api';
       const token = localStorage.getItem('stylehub-token');
-      const userId = localStorage.getItem('stylehub-user-id');
       const res = await fetch(`${apiBase}/enquiries`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(userId ? { 'x-user-id': userId } : {}),
         },
         body: JSON.stringify({
           name: form.name,
@@ -101,12 +100,12 @@ export default function ContactFormClient() {
           <div className="p-4 bg-gradient-to-br from-[var(--rose)]/5 to-[var(--gold)]/5 rounded-2xl border border-[var(--border)] mt-4">
             <p className="text-xs font-body font-semibold text-[var(--charcoal)] mb-1">Looking for quick answers?</p>
             <p className="text-xs font-body text-[var(--muted)] mb-3">Check our FAQ before sending a message.</p>
-            <a
+            <Link
               href="/faq"
               className="inline-flex items-center text-xs font-body font-medium text-[var(--rose)] hover:underline"
             >
               Browse FAQ →
-            </a>
+            </Link>
           </div>
         </div>
 

@@ -76,8 +76,9 @@ function AskQuestionForm({ productId, vendorId, onDone }: { productId: string; v
         throw new Error(json.message || 'Failed to submit question.');
       }
       onDone();
-    } catch (err: any) {
-      alert(err.message || 'Failed to post question.');
+    } catch (err: unknown) {
+      const errorObj = err as { message?: string };
+      alert(errorObj.message || 'Failed to post question.');
     }
   };
 
@@ -187,7 +188,7 @@ export default function QASection({ productId, vendorId }: Props) {
   const [submitted,  setSubmitted]   = useState(false);
   const [filterMode, setFilterMode]  = useState<"all" | "answered" | "pending">("all");
   const [qaItems,    setQaItems]     = useState<QAItem[]>([]);
-  const [loading,    setLoading]     = useState(true);
+  const [_loading,   setLoading]     = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -197,15 +198,15 @@ export default function QASection({ productId, vendorId }: Props) {
         if (!res.ok) return;
         const json = await res.json();
         if (json.success && json.items && active) {
-          const mapped: QAItem[] = json.items.map((item: any) => ({
-            id: item._id,
-            question: item.question,
-            askedByName: item.askedByName,
-            createdAt: new Date(item.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-            answer: item.answer,
-            answeredBy: typeof item.answeredBy === 'object' ? (item.answeredBy as any)?.name : item.answeredBy || 'Vendor',
-            answeredAt: item.answeredAt ? new Date(item.answeredAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : undefined,
-            helpfulCount: item.helpfulCount || 0,
+          const mapped: QAItem[] = json.items.map((item: Record<string, unknown>) => ({
+            id: String(item._id),
+            question: String(item.question),
+            askedByName: String(item.askedByName),
+            createdAt: new Date(String(item.createdAt)).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+            answer: item.answer ? String(item.answer) : undefined,
+            answeredBy: typeof item.answeredBy === 'object' && item.answeredBy !== null ? String((item.answeredBy as Record<string, unknown>).name || 'Vendor') : String(item.answeredBy || 'Vendor'),
+            answeredAt: item.answeredAt ? new Date(String(item.answeredAt)).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : undefined,
+            helpfulCount: Number(item.helpfulCount || 0),
           }));
           setQaItems(mapped);
         }

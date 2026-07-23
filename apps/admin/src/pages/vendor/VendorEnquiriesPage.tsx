@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MessageSquare, Search, Send, Clock, CheckCircle2,
   AlertCircle, ChevronRight, Plus, Loader2, User,
-  IndianRupee, Trash2,
+  IndianRupee, Trash2, RefreshCw, X,
 } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -13,48 +13,8 @@ import { Textarea } from '../../components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogBody } from '../../components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
 import { Separator } from '../../components/ui/separator';
-import type { Enquiry } from '../../api/enquiry.api';
+import enquiryApi, { Enquiry, EnquiryStatus } from '../../api/enquiry.api';
 import { cn } from '../../lib/utils';
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const MOCK_ENQUIRIES: Enquiry[] = [
-  {
-    _id: 'e1', ticketId: 'TKT-001',
-    user: { _id: 'u1', name: 'Priya Sharma', email: 'priya@example.com' },
-    type: 'product', subject: 'Does this shirt run true to size?',
-    message: 'Hi, I normally wear a M in most brands. Do your Oxford shirts run true to size or should I size up?',
-    status: 'open', priority: 'medium',
-    replies: [],
-    createdAt: '2026-07-15T10:00:00Z', updatedAt: '2026-07-15T10:00:00Z',
-  },
-  {
-    _id: 'e2', ticketId: 'TKT-002',
-    user: { _id: 'u2', name: 'Rahul Verma', email: 'rahul@example.com' },
-    type: 'custom_quote', subject: 'Bulk order for corporate gifting — 50 polo shirts',
-    message: 'We need 50 polo shirts with our company logo embroidered. Can you share pricing for this bulk order? Delivery by Aug 15.',
-    status: 'in_progress', priority: 'high',
-    replies: [
-      { _id: 'r1', message: 'Thank you for reaching out! I\'ll prepare a quote shortly.', author: 'v1', authorRole: 'vendor', createdAt: '2026-07-14T11:00:00Z' },
-    ],
-    quoteItems: [
-      { description: '50× Polo Shirt (Embroidered Logo)', quantity: 50, unitPrice: 799 },
-      { description: 'Logo Embroidery Setup', quantity: 1, unitPrice: 2000 },
-    ],
-    quoteTotal: 41950,
-    createdAt: '2026-07-14T09:00:00Z', updatedAt: '2026-07-14T11:00:00Z',
-  },
-  {
-    _id: 'e3', ticketId: 'TKT-003',
-    user: { _id: 'u3', name: 'Ananya Singh', email: 'ananya@example.com' },
-    type: 'order', subject: 'Return request — wrong colour delivered',
-    message: 'I ordered Navy Blue but received Black. Please help me with the return process.',
-    status: 'resolved', priority: 'high',
-    replies: [
-      { _id: 'r2', message: 'Apologies for the error! We\'ve initiated a pickup. Your replacement will ship in 2 business days.', author: 'v1', authorRole: 'vendor', createdAt: '2026-07-13T14:00:00Z' },
-    ],
-    createdAt: '2026-07-13T12:00:00Z', updatedAt: '2026-07-13T14:00:00Z',
-  },
-];
 
 // ─── Config maps ──────────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<string, { label: string; variant: 'success' | 'warning' | 'info' | 'secondary' | 'destructive'; icon: React.ElementType }> = {
@@ -79,11 +39,11 @@ const TYPE_LABEL: Record<string, string> = {
   custom_quote: 'Custom Quote',
 };
 
-// ─── Quote item row ───────────────────────────────────────────────────────────
 interface QuoteItem { description: string; quantity: number; unitPrice: number; }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 const VendorEnquiriesPage: React.FC = () => {
+  const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch]       = useState('');
   const [statusFilter, setStatus] = useState('all');
   const [selected, setSelected]   = useState<Enquiry | null>(null);
@@ -93,347 +53,380 @@ const VendorEnquiriesPage: React.FC = () => {
     { description: '', quantity: 1, unitPrice: 0 },
   ]);
   const [activeTab, setActiveTab] = useState('reply');
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  const filtered = MOCK_ENQUIRIES.filter((e) => {
-    const matchSearch = e.subject.toLowerCase().includes(search.toLowerCase()) ||
-      e.ticketId.includes(search) ||
-      (typeof e.user !== 'string' && e.user.name.toLowerCase().includes(search.toLowerCase()));
+  const fetchEnquiries = async () => {
+    setLoading(true);
+    try {
+      const res = await enquiryApi.myEnquiries();
+      const list = res.data?.data || (res as any).data || [];
+      setEnquiries(list);
+
+      if (selected) {
+        const updated = list.find((e: Enquiry) => e._id === selected._id);
+        if (updated) setSelected(updated);
+      }
+    } catch (err) {
+      console.error('Failed to fetch vendor enquiries:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEnquiries();
+  }, []);
+
+  const handleSendReply = async () => {
+    if (!selected || !replyText.trim() || sending) return;
+    setSending(true);
+    try {
+      await enquiryApi.reply(selected._id, replyText.trim());
+      setReplyText('');
+      await fetchEnquiries();
+    } catch (err) {
+      console.error('Failed to send reply:', err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: EnquiryStatus) => {
+    if (!selected) return;
+    setUpdatingStatus(true);
+    try {
+      await enquiryApi.updateStatus(selected._id, newStatus);
+      await fetchEnquiries();
+    } catch (err) {
+      console.error('Failed to update status:', err);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const handleAddQuoteItem = () => {
+    setQuoteItems((prev) => [...prev, { description: '', quantity: 1, unitPrice: 0 }]);
+  };
+
+  const handleRemoveQuoteItem = (index: number) => {
+    setQuoteItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateQuoteItem = (index: number, field: keyof QuoteItem, value: string | number) => {
+    setQuoteItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    );
+  };
+
+  const calculateQuoteTotal = () => {
+    return quoteItems.reduce((sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0), 0);
+  };
+
+  const handleSendQuote = async () => {
+    if (!selected || sending) return;
+    const validItems = quoteItems.filter((i) => i.description.trim() && i.quantity > 0 && i.unitPrice >= 0);
+    if (validItems.length === 0) return;
+
+    setSending(true);
+    try {
+      await enquiryApi.submitQuote(selected._id, validItems);
+      await fetchEnquiries();
+    } catch (err) {
+      console.error('Failed to send quote:', err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const filtered = enquiries.filter((e) => {
+    const userName = typeof e.user === 'object' && e.user ? e.user.name : '';
+    const matchSearch =
+      e.subject.toLowerCase().includes(search.toLowerCase()) ||
+      (e.ticketId && e.ticketId.toLowerCase().includes(search.toLowerCase())) ||
+      userName.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'all' || e.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
-  const handleReply = async () => {
-    if (!replyText.trim() || !selected) return;
-    setSending(true);
-    await new Promise((r) => setTimeout(r, 800)); // mock
-    selected.replies.push({
-      _id: Date.now().toString(), message: replyText, author: 'vendor',
-      authorRole: 'vendor', createdAt: new Date().toISOString(),
-    });
-    setReplyText('');
-    setSending(false);
+  const getUserName = (e: Enquiry) => {
+    if (typeof e.user === 'object' && e.user) return e.user.name;
+    return 'Customer';
   };
 
-  const quoteTotal = quoteItems.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-
-  const updateQuoteItem = (idx: number, patch: Partial<QuoteItem>) =>
-    setQuoteItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
-
-  const user = (e: Enquiry) => typeof e.user === 'string' ? e.user : e.user;
+  const getUserEmail = (e: Enquiry) => {
+    if (typeof e.user === 'object' && e.user) return e.user.email;
+    return '';
+  };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold font-display">Enquiries & Quotes</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">
-          Respond to customer queries and submit custom quotes.
-        </p>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold font-display">Customer Enquiries</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            Manage inquiries, support tickets, and custom quote requests for your store.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={fetchEnquiries} disabled={loading} className="gap-2 self-start sm:self-auto">
+          <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} /> Refresh
+        </Button>
       </div>
 
-      {/* Summary pills */}
-      <div className="flex gap-2 flex-wrap">
-        {['all', 'open', 'in_progress', 'resolved', 'closed'].map((s) => {
-          const count = s === 'all' ? MOCK_ENQUIRIES.length : MOCK_ENQUIRIES.filter((e) => e.status === s).length;
-          const cfg   = s !== 'all' ? STATUS_BADGE[s] : null;
-          return (
-            <button
-              key={s}
-              onClick={() => setStatus(s)}
-              className={cn(
-                'rounded-full px-3 py-1 text-xs font-medium border transition-all',
-                statusFilter === s ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50',
-              )}
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by ticket ID, subject, or customer…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="flex gap-1 overflow-x-auto">
+          {['all', 'open', 'in_progress', 'resolved', 'closed'].map((st) => (
+            <Button
+              key={st}
+              variant={statusFilter === st ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatus(st)}
+              className="capitalize whitespace-nowrap text-xs"
             >
-              {s === 'all' ? `All (${count})` : `${cfg?.label} (${count})`}
-            </button>
-          );
-        })}
+              {st.replace('_', ' ')}
+            </Button>
+          ))}
+        </div>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Ticket ID, subject, or customer…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-      </div>
-
-      {/* Enquiry cards */}
-      <div className="space-y-3">
-        {filtered.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-              <MessageSquare className="h-8 w-8 text-muted-foreground" />
-              <p className="text-muted-foreground text-sm">No enquiries found</p>
-            </CardContent>
-          </Card>
-        ) : (
-          filtered.map((enquiry) => {
-            const statusCfg   = STATUS_BADGE[enquiry.status]!;
-            const priorityCfg = PRIORITY_BADGE[enquiry.priority]!;
-            const u           = user(enquiry);
-            const hasQuote    = enquiry.type === 'custom_quote';
+      {/* List */}
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <MessageSquare className="h-10 w-10 text-muted-foreground/40 mb-3" />
+            <p className="font-semibold text-sm">No enquiries found</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Clear filters to view all store inquiries</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3">
+          {filtered.map((e) => {
+            const stCfg = STATUS_BADGE[e.status] ?? STATUS_BADGE['open']!;
+            const prCfg = PRIORITY_BADGE[e.priority] ?? PRIORITY_BADGE['medium']!;
+            const StIcon = stCfg.icon;
 
             return (
               <Card
-                key={enquiry._id}
-                className="cursor-pointer hover:shadow-md hover:border-primary/30 transition-all"
-                onClick={() => { setSelected(enquiry); setActiveTab('reply'); setQuoteItems(enquiry.quoteItems?.map(i => ({...i})) ?? [{ description: '', quantity: 1, unitPrice: 0 }]); }}
+                key={e._id}
+                onClick={() => {
+                  setSelected(e);
+                  if (e.quoteItems && e.quoteItems.length > 0) {
+                    setQuoteItems(e.quoteItems);
+                  } else {
+                    setQuoteItems([{ description: '', quantity: 1, unitPrice: 0 }]);
+                  }
+                }}
+                className="hover:shadow-md transition-all cursor-pointer border hover:border-primary/50"
               >
-                <CardContent className="p-4 flex items-start gap-4">
-                  {/* Left: icon */}
-                  <div className={cn(
-                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl mt-0.5',
-                    hasQuote ? 'gradient-violet' : 'bg-muted',
-                  )}>
-                    {hasQuote
-                      ? <IndianRupee className="h-5 w-5 text-white" />
-                      : <MessageSquare className="h-5 w-5 text-muted-foreground" />}
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-xs text-muted-foreground">{enquiry.ticketId}</span>
-                      <span className="text-xs rounded-full bg-secondary px-2 py-0.5">{TYPE_LABEL[enquiry.type]}</span>
-                      <span className={cn('text-[10px] rounded-full px-2 py-0.5 font-semibold', priorityCfg.class)}>
-                        {priorityCfg.label}
-                      </span>
+                <CardContent className="p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="rounded-xl bg-primary/10 p-2.5 text-primary shrink-0 mt-0.5">
+                      <MessageSquare className="h-5 w-5" />
                     </div>
-                    <p className="text-sm font-semibold mt-1 line-clamp-1">{enquiry.subject}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{enquiry.message}</p>
-                    <div className="flex items-center gap-3 mt-2">
-                      <div className="flex items-center gap-1.5">
-                        <div className="h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center">
-                          <User className="h-2.5 w-2.5 text-primary" />
-                        </div>
-                        <span className="text-xs">{typeof u === 'string' ? u : u.name}</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {enquiry.replies.length} {enquiry.replies.length === 1 ? 'reply' : 'replies'}
-                      </span>
-                      {enquiry.quoteTotal && (
-                        <span className="text-xs font-semibold text-primary">
-                          Quote: ₹{enquiry.quoteTotal.toLocaleString('en-IN')}
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-xs font-semibold text-primary">{e.ticketId || e._id.slice(-6)}</span>
+                        <Badge variant={stCfg.variant} className="gap-1 text-[10px] py-0 px-2">
+                          <StIcon className="h-3 w-3" /> {stCfg.label}
+                        </Badge>
+                        <span className={cn('text-[10px] font-medium px-2 py-0.5 rounded-full', prCfg.class)}>
+                          {prCfg.label}
                         </span>
-                      )}
+                        <span className="text-[10px] text-muted-foreground uppercase">{TYPE_LABEL[e.type] || e.type}</span>
+                      </div>
+                      <h3 className="font-semibold text-sm truncate">{e.subject}</h3>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{e.message}</p>
+                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground pt-0.5">
+                        <span className="flex items-center gap-1"><User className="h-3 w-3" />{getUserName(e)}</span>
+                        <span>• {new Date(e.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</span>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Right: status + arrow */}
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <Badge variant={statusCfg.variant} className="gap-1 text-[10px]">
-                      <statusCfg.icon className="h-2.5 w-2.5" />
-                      {statusCfg.label}
-                    </Badge>
-                    <span className="text-[10px] text-muted-foreground">
-                      {new Date(enquiry.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                    </span>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
                 </CardContent>
               </Card>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
 
-      {/* ── Enquiry Detail Dialog ──────────────────────────────────────────────── */}
-      <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-        {selected && (() => {
-          const statusCfg = STATUS_BADGE[selected.status]!;
-          const u = user(selected);
-
-          return (
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono text-sm text-muted-foreground">{selected.ticketId}</span>
-                  <span className="text-base">{selected.subject}</span>
-                  <Badge variant={statusCfg.variant} className="gap-1 text-[10px]">
-                    <statusCfg.icon className="h-2.5 w-2.5" />
-                    {statusCfg.label}
-                  </Badge>
-                </DialogTitle>
-              </DialogHeader>
-
-              <DialogBody className="space-y-4">
-                {/* Original message */}
-                <div className="rounded-xl bg-muted/50 p-4 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded-full gradient-blue flex items-center justify-center text-white text-[10px] font-bold">
-                      {typeof u !== 'string' ? u.name.charAt(0) : '?'}
-                    </div>
-                    <p className="text-xs font-semibold">{typeof u !== 'string' ? u.name : u}</p>
-                    <p className="text-[10px] text-muted-foreground ml-auto">
-                      {new Date(selected.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                    </p>
+      {/* Detail Dialog */}
+      {selected && (
+        <Dialog open={!!selected} onOpenChange={(open) => { if (!open) setSelected(null); }}>
+          <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+            <DialogHeader className="p-6 pb-4 border-b">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono text-xs font-semibold text-primary">{selected.ticketId || selected._id.slice(-6)}</span>
+                    <Badge variant={STATUS_BADGE[selected.status]?.variant || 'warning'}>
+                      {STATUS_BADGE[selected.status]?.label || selected.status}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground uppercase">{TYPE_LABEL[selected.type] || selected.type}</span>
                   </div>
-                  <p className="text-sm leading-relaxed">{selected.message}</p>
+                  <DialogTitle className="text-lg">{selected.subject}</DialogTitle>
                 </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <label className="text-xs font-medium text-muted-foreground">Status:</label>
+                  <select
+                    disabled={updatingStatus}
+                    value={selected.status}
+                    onChange={(e) => handleStatusChange(e.target.value as EnquiryStatus)}
+                    className="text-xs border rounded-lg px-2 py-1 bg-background font-medium focus:outline-none"
+                  >
+                    <option value="open">Open</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+              </div>
+            </DialogHeader>
 
-                {/* Reply thread */}
-                {selected.replies.length > 0 && (
-                  <div className="space-y-2">
-                    {selected.replies.map((reply) => (
-                      <div
-                        key={reply._id}
-                        className={cn(
-                          'rounded-xl p-4',
-                          reply.authorRole === 'vendor'
-                            ? 'bg-primary/10 border border-primary/20 ml-4'
-                            : 'bg-muted/50',
-                        )}
-                      >
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <div className={cn(
-                            'h-6 w-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold',
-                            reply.authorRole === 'vendor' ? 'gradient-violet' : 'gradient-blue',
-                          )}>
-                            {reply.authorRole === 'vendor' ? 'V' : 'C'}
-                          </div>
-                          <p className="text-xs font-semibold capitalize">{reply.authorRole}</p>
-                          <p className="text-[10px] text-muted-foreground ml-auto">
-                            {new Date(reply.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
-                          </p>
-                        </div>
-                        <p className="text-sm leading-relaxed">{reply.message}</p>
+            <DialogBody className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Customer info */}
+              <div className="rounded-xl bg-muted/40 p-4 space-y-2 text-sm">
+                <div className="flex items-center gap-2 font-medium">
+                  <User className="h-4 w-4 text-primary" /> {getUserName(selected)} ({getUserEmail(selected)})
+                </div>
+                <p className="text-muted-foreground leading-relaxed text-xs pt-1 border-t border-border/50">
+                  {selected.message}
+                </p>
+              </div>
+
+              {/* Existing replies */}
+              {selected.replies && selected.replies.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Responses</h4>
+                  {selected.replies.map((r, i) => (
+                    <div
+                      key={r._id || i}
+                      className={cn(
+                        'p-3.5 rounded-xl text-sm border',
+                        r.authorRole === 'vendor' ? 'bg-primary/5 border-primary/20 ml-6' : 'bg-muted/30 mr-6'
+                      )}
+                    >
+                      <div className="flex justify-between items-center text-xs text-muted-foreground mb-1.5 font-medium">
+                        <span className="capitalize">{r.authorRole}</span>
+                        <span>{new Date(r.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                      </div>
+                      <p className="leading-relaxed text-xs">{r.message}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Quote details if present */}
+              {selected.quoteTotal !== undefined && selected.quoteTotal > 0 && (
+                <div className="rounded-xl border p-4 bg-muted/20 space-y-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                    <span>Submitted Custom Quote</span>
+                    <span className="text-emerald-600 font-bold text-sm">₹{selected.quoteTotal.toLocaleString('en-IN')}</span>
+                  </h4>
+                  <div className="space-y-1 pt-1">
+                    {(selected.quoteItems || []).map((item, idx) => (
+                      <div key={idx} className="flex justify-between text-xs py-1 border-b border-border/40 last:border-0">
+                        <span>{item.description} ({item.quantity}×)</span>
+                        <span className="font-mono">₹{(item.quantity * item.unitPrice).toLocaleString('en-IN')}</span>
                       </div>
                     ))}
                   </div>
-                )}
+                </div>
+              )}
 
-                <Separator />
+              {/* Tabs for Reply vs Custom Quote */}
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid grid-cols-2">
+                  <TabsTrigger value="reply">Send Message</TabsTrigger>
+                  <TabsTrigger value="quote">Submit Custom Quote</TabsTrigger>
+                </TabsList>
 
-                {/* Action tabs */}
-                {selected.status !== 'closed' && (
-                  <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="w-full">
-                      <TabsTrigger value="reply" className="flex-1 gap-1.5">
-                        <Send className="h-3.5 w-3.5" /> Reply
-                      </TabsTrigger>
-                      {selected.type === 'custom_quote' && (
-                        <TabsTrigger value="quote" className="flex-1 gap-1.5">
-                          <IndianRupee className="h-3.5 w-3.5" /> Quote Builder
-                        </TabsTrigger>
-                      )}
-                    </TabsList>
+                <TabsContent value="reply" className="space-y-3 pt-3">
+                  <Textarea
+                    placeholder="Type your response to the customer…"
+                    rows={4}
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                  />
+                  <Button
+                    onClick={handleSendReply}
+                    disabled={!replyText.trim() || sending}
+                    className="w-full gap-2"
+                  >
+                    {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    Send Response
+                  </Button>
+                </TabsContent>
 
-                    {/* Reply tab */}
-                    <TabsContent value="reply" className="space-y-3">
-                      <Textarea
-                        rows={4}
-                        placeholder="Type your reply…"
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                      />
-                      <div className="flex gap-2 justify-end">
-                        {selected.status === 'open' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => { selected.status = 'resolved'; setSelected({ ...selected }); }}
-                          >
-                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                            Mark Resolved
+                <TabsContent value="quote" className="space-y-4 pt-3">
+                  <div className="space-y-3">
+                    {quoteItems.map((item, idx) => (
+                      <div key={idx} className="flex gap-2 items-center">
+                        <Input
+                          placeholder="Item description (e.g. 50x Custom Embroidered Kurtas)"
+                          value={item.description}
+                          onChange={(e) => handleUpdateQuoteItem(idx, 'description', e.target.value)}
+                          className="flex-1 text-xs"
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Qty"
+                          value={item.quantity}
+                          onChange={(e) => handleUpdateQuoteItem(idx, 'quantity', Number(e.target.value))}
+                          className="w-20 text-xs"
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Unit Price (₹)"
+                          value={item.unitPrice}
+                          onChange={(e) => handleUpdateQuoteItem(idx, 'unitPrice', Number(e.target.value))}
+                          className="w-28 text-xs"
+                        />
+                        {quoteItems.length > 1 && (
+                          <Button variant="ghost" size="icon" onClick={() => handleRemoveQuoteItem(idx)} className="h-8 w-8 text-destructive">
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         )}
-                        <Button
-                          size="sm"
-                          onClick={handleReply}
-                          disabled={!replyText.trim() || sending}
-                          className="gap-2"
-                        >
-                          {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                          Send Reply
-                        </Button>
                       </div>
-                    </TabsContent>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={handleAddQuoteItem} className="gap-1 text-xs">
+                      <Plus className="h-3.5 w-3.5" /> Add Quote Item
+                    </Button>
+                  </div>
 
-                    {/* Quote builder tab */}
-                    <TabsContent value="quote" className="space-y-4">
-                      <div className="space-y-2">
-                        {quoteItems.map((item, idx) => (
-                          <div key={idx} className="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center">
-                            <Input
-                              placeholder="Item description"
-                              value={item.description}
-                              onChange={(e) => updateQuoteItem(idx, { description: e.target.value })}
-                              className="text-sm"
-                            />
-                            <div className="w-16">
-                              <Input
-                                type="number"
-                                min={1}
-                                placeholder="Qty"
-                                value={item.quantity}
-                                onChange={(e) => updateQuoteItem(idx, { quantity: Number(e.target.value) })}
-                                className="text-sm text-center"
-                              />
-                            </div>
-                            <div className="relative w-24">
-                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
-                              <Input
-                                type="number"
-                                placeholder="Price"
-                                value={item.unitPrice}
-                                onChange={(e) => updateQuoteItem(idx, { unitPrice: Number(e.target.value) })}
-                                className="text-sm pl-6"
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setQuoteItems((p) => p.filter((_, i) => i !== idx))}
-                              className="p-1.5 rounded-lg hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted font-semibold text-sm">
+                    <span>Total Quote Amount:</span>
+                    <span className="font-mono text-primary">₹{calculateQuoteTotal().toLocaleString('en-IN')}</span>
+                  </div>
 
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setQuoteItems((p) => [...p, { description: '', quantity: 1, unitPrice: 0 }])}
-                        className="gap-2 w-full border-dashed"
-                      >
-                        <Plus className="h-3.5 w-3.5" /> Add Line Item
-                      </Button>
-
-                      {/* Quote total */}
-                      <div className="flex items-center justify-between rounded-xl bg-primary/10 border border-primary/20 px-4 py-3">
-                        <span className="text-sm font-semibold">Quote Total</span>
-                        <span className="text-lg font-bold font-display text-primary">
-                          ₹{quoteTotal.toLocaleString('en-IN')}
-                        </span>
-                      </div>
-
-                      <Button
-                        size="sm"
-                        className="w-full gap-2"
-                        disabled={quoteTotal === 0}
-                        onClick={() => {
-                          selected.quoteItems = quoteItems;
-                          selected.quoteTotal = quoteTotal;
-                          setActiveTab('reply');
-                          setReplyText(`Please find our custom quote attached:\nTotal: ₹${quoteTotal.toLocaleString('en-IN')}\n\nItems:\n${quoteItems.map((i) => `• ${i.description} × ${i.quantity} @ ₹${i.unitPrice}`).join('\n')}`);
-                        }}
-                      >
-                        <IndianRupee className="h-3.5 w-3.5" />
-                        Insert Quote into Reply
-                      </Button>
-                    </TabsContent>
-                  </Tabs>
-                )}
-              </DialogBody>
-
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setSelected(null)}>Close</Button>
-              </DialogFooter>
-            </DialogContent>
-          );
-        })()}
-      </Dialog>
+                  <Button
+                    onClick={handleSendQuote}
+                    disabled={calculateQuoteTotal() <= 0 || sending}
+                    className="w-full gap-2"
+                  >
+                    {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <IndianRupee className="h-4 w-4" />}
+                    Submit Official Quote
+                  </Button>
+                </TabsContent>
+              </Tabs>
+            </DialogBody>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

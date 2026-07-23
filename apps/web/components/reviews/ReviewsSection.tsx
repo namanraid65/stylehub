@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api';
-import { Star, ThumbsUp, Image as ImageIcon, ChevronDown, Loader2, CheckCircle2 } from "lucide-react";
+import { Star, ThumbsUp, ChevronDown, Loader2, CheckCircle2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -252,11 +252,12 @@ export default function ReviewsSection({ reviews, rating, reviewCount, productId
       }
 
       // Write to API
+      const token = typeof window !== 'undefined' ? localStorage.getItem('stylehub-token') : null;
       const res = await fetch(`${API}/reviews`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": "60c72b2f9b1d8b2d1c999999", // default customer ID
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           productId,
@@ -275,8 +276,9 @@ export default function ReviewsSection({ reviews, rating, reviewCount, productId
 
       setShowModal(false);
       setSubmitted(true);
-    } catch (err: any) {
-      alert(err.message || "Failed to submit review.");
+    } catch (err: unknown) {
+      const errorObj = err as { message?: string };
+      alert(errorObj.message || "Failed to submit review.");
     }
   };
 

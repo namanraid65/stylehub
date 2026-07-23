@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import mongoose from 'mongoose';
 import Review from '../models/Review';
+import { protect } from '../middleware/auth';
 
 const router = Router();
 
@@ -58,11 +59,10 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // POST /api/reviews
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', protect, async (req: Request, res: Response) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ success: false, errors: parsed.error.flatten() }); return; }
-  const customerId = req.headers['x-user-id'] as string;
-  if (!customerId) { res.status(401).json({ success: false, message: 'Login required to review.' }); return; }
+  const customerId = req.user!._id;
   try {
     const { productId, vendorId, orderId, ...rest } = parsed.data;
     const review = await Review.create({
@@ -86,9 +86,8 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // PATCH /api/reviews/:id/helpful
-router.patch('/:id/helpful', async (req: Request, res: Response) => {
-  const customerId = req.headers['x-user-id'] as string;
-  if (!customerId) { res.status(401).json({ success: false, message: 'Login required.' }); return; }
+router.patch('/:id/helpful', protect, async (req: Request, res: Response) => {
+  const customerId = req.user!._id;
   try {
     const review = await Review.findById(req.params.id);
     if (!review) { res.status(404).json({ success: false, message: 'Review not found.' }); return; }

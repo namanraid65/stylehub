@@ -8,6 +8,7 @@ import {
   type CartItem,
 } from "@/lib/stores/cart.store";
 import CouponInput from "./CouponInput";
+import { Price } from "@/components/ui/Price";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -46,9 +47,9 @@ function CartItemRow({ item }: { item: CartItem }) {
         <div className="flex items-center justify-between mt-3 flex-wrap gap-3">
           {/* Price */}
           <div className="flex items-baseline gap-2">
-            <span className="text-base font-body font-semibold text-[var(--charcoal)]">{fmt(item.price)}</span>
+            <Price amount={item.price} className="text-base font-body font-semibold text-[var(--charcoal)]" />
             {item.compareAtPrice && (
-              <span className="text-xs font-body text-[var(--muted)] line-through">{fmt(item.compareAtPrice)}</span>
+              <Price amount={item.compareAtPrice} className="text-xs font-body text-[var(--muted)] line-through" />
             )}
           </div>
 

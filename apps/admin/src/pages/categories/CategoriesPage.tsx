@@ -78,18 +78,20 @@ const CategoriesPage: React.FC = () => {
     if (!name.trim()) return;
 
     try {
-      const payload: CreateCategoryPayload = {
+      const payload: Record<string, unknown> = {
         name,
-        parent: parent || null,
-        order: Number(order) || 1,
+        ...(parent ? { parent } : {}),
+        sortOrder: Number(order) || 0,
       };
-      if (description) payload.description = description;
-      if (image) payload.image = image;
+      if (description?.trim()) payload.description = description.trim();
+      if (image?.trim() && (image.startsWith('http://') || image.startsWith('https://'))) {
+        payload.image = image.trim();
+      }
 
       if (editMode && selectedId) {
         await categoryApi.update(selectedId, payload);
       } else {
-        await categoryApi.create(payload);
+        await categoryApi.create(payload as any);
       }
       fetchCategories();
       setDialogOpen(false);

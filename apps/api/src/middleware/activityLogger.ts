@@ -32,9 +32,9 @@ export function logActivity(
       if (_res.statusCode >= 400) return;
 
       const user = (_req as any).user;
-      const actorId   = user?._id || (_req.headers['x-user-id']   as string | undefined);
-      const actorName = user?.name || (_req.headers['x-user-name']  as string | undefined);
-      const actorRole = user?.role || (_req.headers['x-user-role'] as string | undefined) || 'customer';
+      const actorId   = user?._id;
+      const actorName = user?.name;
+      const actorRole = user?.role || 'customer';
 
       if (!actorId || !mongoose.isValidObjectId(actorId)) return;
 
@@ -44,6 +44,10 @@ export function logActivity(
         (capturedBody?.enquiryId as string) ||
         (capturedBody?.productId as string) ||
         (capturedBody?._id as string) ||
+        (capturedBody?.data as any)?._id ||
+        (capturedBody?.data as any)?.id ||
+        (capturedBody?.data as any)?.orderId ||
+        (capturedBody?.data as any)?.productId ||
         (_req.params?.id as string) ||
         undefined;
 

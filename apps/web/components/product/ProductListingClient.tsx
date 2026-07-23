@@ -341,7 +341,7 @@ export default function ProductListingClient({ initialProducts, categories }: Pr
     router.push("/products");
   };
  
-  const FilterPanel = () => {
+  const renderFilterPanel = () => {
     const renderSizeGroup = (title: string, groupSizes: string[]) => {
       // Only show the size group if there is at least one product matching other filters that has a size in this group
       const hasAnyActiveSize = groupSizes.some(s => productsForSizeCounts.some(p => p.variants.some(v => v.size === s)));
@@ -661,7 +661,7 @@ export default function ProductListingClient({ initialProducts, categories }: Pr
             }`}
           >
             <div className="w-64 sticky top-24 bg-white rounded-2xl p-6 shadow-sm border border-[var(--border)]/40">
-              <FilterPanel />
+              {renderFilterPanel()}
             </div>
           </div>
 
@@ -805,7 +805,7 @@ export default function ProductListingClient({ initialProducts, categories }: Pr
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <FilterPanel />
+            {renderFilterPanel()}
             <button
               onClick={() => setMobileFilter(false)}
               className="mt-6 w-full py-3 rounded-full bg-[var(--rose)] text-white font-body font-medium text-sm hover:bg-[var(--rose-dark)] transition-colors"

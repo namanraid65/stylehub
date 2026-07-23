@@ -10,6 +10,7 @@ export type NotificationType =
   | 'enquiry_reply'
   | 'enquiry_resolved'
   | 'new_coupon'
+  | 'low_stock'
   | 'system';
 
 export interface INotificationDoc extends Document {
@@ -32,7 +33,7 @@ const NotificationSchema = new Schema<INotificationDoc>(
         'order_confirmed','order_shipped','order_delivered','order_cancelled',
         'review_approved','review_rejected',
         'enquiry_reply','enquiry_resolved',
-        'new_coupon','system',
+        'new_coupon','low_stock','system',
       ] as NotificationType[],
       required: true,
     },

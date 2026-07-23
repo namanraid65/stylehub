@@ -9,6 +9,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiResponseBuilder } from '../utils/ApiResponse';
 import { ApiError } from '../utils/ApiError';
 import { UserRole } from '@stylehub/types';
+import { checkAndTriggerLowStockAlert } from '../utils/lowStockAlert';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const buildProductFilter = (query: Record<string, string>) => {
@@ -147,8 +148,28 @@ export const createProduct = asyncHandler(async (req: Request, res: Response) =>
 
   // Resolve vendor id from the logged-in user
   let vendorId: string;
-  if (req.user!.role === UserRole.Admin && rest['vendorId']) {
-    vendorId = rest['vendorId'] as string;
+  if (req.user!.role === UserRole.Admin) {
+    if (rest['vendorId'] && mongoose.isValidObjectId(rest['vendorId'] as string)) {
+      vendorId = rest['vendorId'] as string;
+    } else {
+      let vendor = await Vendor.findOne({ user: req.user!._id });
+      if (!vendor) {
+        vendor = await Vendor.findOne({ status: 'approved' });
+      }
+      if (!vendor) {
+        vendor = await Vendor.findOne();
+      }
+      if (!vendor) {
+        vendor = await Vendor.create({
+          user: req.user!._id,
+          storeName: 'StyleHub Official',
+          storeSlug: 'stylehub-official',
+          storeDescription: 'Official StyleHub Store',
+          status: 'approved',
+        });
+      }
+      vendorId = vendor._id.toString();
+    }
   } else {
     const vendor = await Vendor.findOne({ user: req.user!._id });
     if (!vendor) throw ApiError.forbidden('You do not have a vendor profile.');
@@ -215,6 +236,7 @@ export const updateProduct = asyncHandler(async (req: Request, res: Response) =>
 
   Object.assign(product, req.body);
   await product.save();
+  await checkAndTriggerLowStockAlert(product);
 
   // Notification for sale/price drop
   try {
@@ -269,6 +291,7 @@ export const updateVariantStock = asyncHandler(async (req: Request, res: Respons
   variant.stock = stock;
   // Pre-save hook will sync totalStock
   await product.save();
+  await checkAndTriggerLowStockAlert(product);
 
   res.json(ApiResponseBuilder.success('Variant stock updated.', { variantId, stock, totalStock: product.totalStock }));
 });

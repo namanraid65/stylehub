@@ -62,6 +62,7 @@ const VendorsPage: React.FC = () => {
         password: newVendorPassword,
         storeName: newStoreName,
         storeDescription: newStoreDesc,
+        autoApprove: 'true',
       });
       await fetchVendors();
       setNewVendorName('');

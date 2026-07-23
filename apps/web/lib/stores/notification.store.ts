@@ -47,7 +47,7 @@ const DEMO: AppNotification[] = [
 
 export const useNotificationStore = create<NotificationStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       notifications: DEMO,
       unreadCount:   DEMO.filter((n) => !n.isRead).length,
 

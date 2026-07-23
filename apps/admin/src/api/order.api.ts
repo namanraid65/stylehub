@@ -45,7 +45,7 @@ const mapOrder = (o: any): Order => {
 
 const orderApi = {
   // Vendor: own orders only (server filters by vendor)
-  myOrders: async (params?: { page?: number; limit?: number; status?: OrderStatus }) => {
+  myOrders: async (params?: { page?: number; limit?: number; status?: OrderStatus; search?: string }) => {
     const res = await apiClient.get<{ data: any[]; pagination: unknown }>('/orders/vendor/mine', { params });
     if (res.data && res.data.data) {
       res.data.data = res.data.data.map(mapOrder);
@@ -54,7 +54,7 @@ const orderApi = {
   },
 
   // Admin: all orders
-  allOrders: async (params?: { page?: number; limit?: number; status?: OrderStatus }) => {
+  allOrders: async (params?: { page?: number; limit?: number; status?: OrderStatus; search?: string }) => {
     const res = await apiClient.get<{ data: any[]; pagination: unknown }>('/orders', { params });
     if (res.data && res.data.data) {
       res.data.data = res.data.data.map(mapOrder);
@@ -82,6 +82,24 @@ const orderApi = {
   // Update payment status (vendor/admin)
   updatePaymentStatus: async (id: string, paymentStatus: string) => {
     const res = await apiClient.patch<{ data: any }>(`/orders/${id}/payment-status`, { paymentStatus });
+    if (res.data && res.data.data) {
+      res.data.data = mapOrder(res.data.data);
+    }
+    return res;
+  },
+
+  // Cancel order
+  cancelOrder: async (id: string, reason?: string) => {
+    const res = await apiClient.post<{ data: any }>(`/orders/${id}/cancel`, { reason });
+    if (res.data && res.data.data) {
+      res.data.data = mapOrder(res.data.data);
+    }
+    return res;
+  },
+
+  // Request return
+  requestReturn: async (id: string, reason: string, items?: any[]) => {
+    const res = await apiClient.post<{ data: any }>(`/orders/${id}/return`, { reason, items });
     if (res.data && res.data.data) {
       res.data.data = mapOrder(res.data.data);
     }

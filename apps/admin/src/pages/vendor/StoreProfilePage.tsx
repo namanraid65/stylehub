@@ -47,11 +47,13 @@ const StoreProfilePage: React.FC = () => {
   const [bannerUrl, setBannerUrl] = useState<string[]>([]);
   const [saving, setSaving]       = useState(false);
   const [saved, setSaved]         = useState(false);
-  const [storeStatus]             = useState<string>('pending');
+  const [storeStatus, setStoreStatus] = useState<string>('pending');
+  const [loading, setLoading]     = useState<boolean>(true);
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isDirty },
   } = useForm<StoreFormValues>({
     resolver: zodResolver(storeSchema),
@@ -63,6 +65,37 @@ const StoreProfilePage: React.FC = () => {
       returnPolicy:     'Returns accepted within 7 days of delivery in original condition.',
     },
   });
+
+  React.useEffect(() => {
+    const fetchProfile = async () => {
+      setLoading(true);
+      try {
+        const res = await vendorApi.getMyStore();
+        const profile = res.data?.data || (res as any).data;
+        if (profile) {
+          setStoreStatus(profile.status || 'pending');
+          if (profile.storeLogo) setLogoUrl([profile.storeLogo]);
+          if (profile.storeBanner) setBannerUrl([profile.storeBanner]);
+          reset({
+            storeName: profile.storeName || '',
+            storeDescription: profile.storeDescription || '',
+            businessEmail: profile.businessEmail || user?.email || '',
+            businessPhone: profile.businessPhone || '',
+            returnPolicy: profile.returnPolicy || 'Returns accepted within 7 days of delivery in original condition.',
+            instagram: profile.socialLinks?.instagram || '',
+            facebook: profile.socialLinks?.facebook || '',
+            twitter: profile.socialLinks?.twitter || '',
+            website: profile.socialLinks?.website || '',
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load vendor profile:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [user, reset]);
 
   const onSubmit = async (data: StoreFormValues) => {
     setSaving(true);

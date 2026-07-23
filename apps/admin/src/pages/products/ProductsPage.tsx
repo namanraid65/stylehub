@@ -197,8 +197,16 @@ const ProductsPage: React.FC = () => {
                         <TableCell className="font-mono text-xs">{product.sku}</TableCell>
                         <TableCell className="text-sm font-medium">{product.brand}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{getCategoryName(product)}</TableCell>
-                        <TableCell className="text-sm font-semibold">₹{product.basePrice.toLocaleString('en-IN')}</TableCell>
-                        <TableCell className="text-sm font-medium">{product.totalStock ?? 0}</TableCell>
+                        <TableCell>
+                          <div>
+                            <span className="text-sm font-bold text-foreground">{product.totalStock ?? 0}</span>
+                            {product.variants && product.variants.length > 0 && (
+                              <p className="text-[10px] text-muted-foreground truncate max-w-[160px] font-mono mt-0.5" title={product.variants.map(v => `${v.size}: ${v.stock}`).join(', ')}>
+                                {product.variants.map(v => `${v.size}:${v.stock}`).join(' · ')}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge variant={cfg.variant}>{cfg.label}</Badge>
                         </TableCell>

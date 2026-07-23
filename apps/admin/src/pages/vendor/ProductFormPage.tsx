@@ -35,6 +35,7 @@ const productSchema = z.object({
   careInstructions:  z.string().max(500).optional(),
   basePrice:         z.coerce.number().positive('Price must be positive'),
   compareAtPrice:    z.coerce.number().positive().optional(),
+  minStockThreshold: z.coerce.number().min(0).default(5),
   status:            z.enum(['draft', 'active', 'inactive']),
   isFeatured:        z.boolean(),
 });
@@ -86,7 +87,7 @@ const ProductFormPage: React.FC<ProductFormPageProps> = ({ mode = 'create' }) =>
     formState: { errors },
   } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema) as never,
-    defaultValues: { status: 'draft' as const, isFeatured: false, gender: 'unisex' as const },
+    defaultValues: { status: 'draft' as const, isFeatured: false, gender: 'unisex' as const, minStockThreshold: 5 },
   });
 
   const basePrice = watch('basePrice') ?? 0;
@@ -125,6 +126,7 @@ const ProductFormPage: React.FC<ProductFormPageProps> = ({ mode = 'create' }) =>
             careInstructions: p.careInstructions || '',
             basePrice: p.basePrice,
             compareAtPrice: p.compareAtPrice,
+            minStockThreshold: (p as any).minStockThreshold ?? 5,
             status: p.status as any,
             isFeatured: p.isFeatured || false,
           });
@@ -179,6 +181,7 @@ const ProductFormPage: React.FC<ProductFormPageProps> = ({ mode = 'create' }) =>
         ...(data.careInstructions ? { careInstructions: data.careInstructions } : {}),
         basePrice:        data.basePrice,
         ...(data.compareAtPrice   ? { compareAtPrice:   data.compareAtPrice }   : {}),
+        minStockThreshold: Number(data.minStockThreshold) || 5,
         variants:         variants.map(({ _localId, ...v }) => v),
         status:           data.status,
         isFeatured:       data.isFeatured,
@@ -407,6 +410,20 @@ const ProductFormPage: React.FC<ProductFormPageProps> = ({ mode = 'create' }) =>
                         {...register('compareAtPrice')}
                       />
                     </div>
+                  </div>
+
+                  {/* Low Stock Threshold */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="minStockThreshold">Low Stock Alert Level <span className="text-muted-foreground text-xs">(units)</span></Label>
+                    <Input
+                      id="minStockThreshold"
+                      type="number"
+                      min="0"
+                      placeholder="5"
+                      error={errors.minStockThreshold?.message}
+                      {...register('minStockThreshold')}
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Triggers alarm when stock drops to/below this quantity</p>
                   </div>
 
                   {/* Discount preview */}

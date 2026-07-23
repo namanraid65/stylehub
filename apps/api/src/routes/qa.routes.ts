@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import mongoose from 'mongoose';
 import QA from '../models/QA';
+import { protect, optionalAuth } from '../middleware/auth';
 
 const router = Router();
 
@@ -46,7 +47,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // POST /api/qa
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', optionalAuth, async (req: Request, res: Response) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ success: false, errors: parsed.error.flatten() }); return; }
   try {
@@ -55,9 +56,7 @@ router.post('/', async (req: Request, res: Response) => {
       ...rest,
       product:  new mongoose.Types.ObjectId(productId),
       vendor:   new mongoose.Types.ObjectId(vendorId),
-      askedBy:  req.headers['x-user-id']
-        ? new mongoose.Types.ObjectId(req.headers['x-user-id'] as string)
-        : undefined,
+      askedBy:  req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : undefined,
     });
     res.status(201).json({ success: true, qaId: qa._id, message: 'Question submitted successfully.' });
   } catch {
@@ -66,11 +65,10 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // POST /api/qa/:id/answer
-router.post('/:id/answer', async (req: Request, res: Response) => {
+router.post('/:id/answer', protect, async (req: Request, res: Response) => {
   const parsed = answerSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ success: false, errors: parsed.error.flatten() }); return; }
-  const actorId = req.headers['x-user-id'] as string;
-  if (!actorId) { res.status(401).json({ success: false, message: 'Auth required.' }); return; }
+  const actorId = req.user!._id;
   try {
     const qa = await QA.findByIdAndUpdate(
       req.params.id,

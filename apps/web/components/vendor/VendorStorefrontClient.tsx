@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   MapPin, Star, Package, ShieldCheck, ArrowRight, Heart,
-  Instagram, Globe, Award,
+  Globe, Award,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import ProductCard from "@/components/product/ProductCard";

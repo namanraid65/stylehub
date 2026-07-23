@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { fetchCmsPage, getActiveBlocks } from '@/lib/cms-data';
-import { NotFoundState } from '@/components/ui/states';
 import CMSRenderer from '@/components/cms/CMSRenderer';
 import Image from 'next/image';
 
@@ -143,12 +143,12 @@ export default async function AboutPage() {
         <div className="max-w-xl mx-auto px-6 text-center text-white">
           <h2 className="font-display text-3xl font-medium mb-3">Start Shopping</h2>
           <p className="font-body text-white/80 text-sm mb-6">Discover thousands of handpicked fashion pieces from India's finest artisans.</p>
-          <a
+          <Link
             href="/products"
             className="inline-block px-8 py-3 rounded-full bg-white text-[var(--rose)] font-body font-semibold text-sm hover:bg-white/90 transition-colors"
           >
             Explore the Collection
-          </a>
+          </Link>
         </div>
       </div>
     </div>

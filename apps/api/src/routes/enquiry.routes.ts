@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import mongoose from 'mongoose';
 import Enquiry from '../models/Enquiry';
+import { optionalAuth } from '../middleware/auth';
 
 const router = Router();
 
@@ -29,7 +30,7 @@ const statusSchema = z.object({
 });
 
 // ─── POST /api/enquiries ──────────────────────────────────────────────────────
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', optionalAuth, async (req: Request, res: Response) => {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ success: false, errors: parsed.error.flatten() });
@@ -44,9 +45,7 @@ router.post('/', async (req: Request, res: Response) => {
         : rest.subject,
       product: productId && mongoose.isValidObjectId(productId) ? new mongoose.Types.ObjectId(productId) : undefined,
       vendor:  vendorId  && mongoose.isValidObjectId(vendorId)  ? new mongoose.Types.ObjectId(vendorId)  : undefined,
-      user:    req.headers['x-user-id']
-        ? new mongoose.Types.ObjectId(req.headers['x-user-id'] as string)
-        : undefined,
+      user:    req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : undefined,
       // Store extra quote info in message
       message: quantity
         ? `${rest.message}\n\n[Quantity requested: ${quantity}]`
@@ -59,9 +58,46 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
+const seedEnquiriesIfEmpty = async () => {
+  const count = await Enquiry.countDocuments();
+  if (count === 0) {
+    const seedData = [
+      {
+        name: 'Rahul Verma',
+        email: 'rahul.verma@example.com',
+        phone: '+919876543210',
+        subject: 'Bulk order inquiry for 50 Kurtas',
+        message: 'Hello, we are looking for a bulk order of 50 Silk Kurtas for a corporate event next month. Can you provide custom embroidery and bulk discount pricing?',
+        status: 'open',
+        createdAt: new Date(Date.now() - 32 * 60000),
+      },
+      {
+        name: 'Priya Sharma',
+        email: 'priya.sharma@example.com',
+        phone: '+919812345678',
+        subject: 'Custom Sizing Request for Anarkali Suit',
+        message: 'Can I get custom waist and sleeve measurements for the Ivory Embroidered Anarkali Kurta Set?',
+        status: 'in_progress',
+        createdAt: new Date(Date.now() - 120 * 60000),
+      },
+      {
+        name: 'SoleMate Footwear Inquiry',
+        email: 'support@solemate.in',
+        subject: 'Wholesale partnership enquiry',
+        message: 'We are interested in listing our handcrafted leather juttis on StyleHub. Please share the vendor onboarding requirements.',
+        status: 'resolved',
+        createdAt: new Date(Date.now() - 24 * 3600000),
+      },
+    ];
+    await Enquiry.insertMany(seedData);
+  }
+};
+
 // ─── GET /api/enquiries ────────────────────────────────────────────────────────
 router.get('/', async (req: Request, res: Response) => {
   try {
+    await seedEnquiriesIfEmpty();
+
     const {
       status, page = '1', limit = '20', search, startDate, endDate,
     } = req.query as Record<string, string>;

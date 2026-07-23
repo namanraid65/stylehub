@@ -116,7 +116,7 @@ export const VENDORS: Vendor[] = [
   {
     id: 'v5', name: 'VelveteenRose', slug: 'velveteen-rose',
     logo: 'https://images.unsplash.com/photo-1533659124865-d6072dc035e1?w=80&h=80&fit=crop',
-    banner: 'https://images.unsplash.com/photo-1583391733987-e2c4b7290c3a?w=1200&h=400&fit=crop',
+    banner: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1200&h=400&fit=crop',
     description: 'Boho-chic kaftans, tops and loungewear inspired by the coastal lifestyle.',
     rating: 4.7, reviewCount: 420, productCount: 95, location: 'Goa, India',
     tags: ['Kaftans', 'Boho', 'Resort'], verified: true,
@@ -132,7 +132,8 @@ export const CATEGORIES: Category[] = [
   { id: 'c5', name: 'Accessories', slug: 'accessories', image: 'https://images.unsplash.com/photo-1611085583191-a3b181a88401?w=400&h=500&fit=crop', productCount: 340, gradient: 'from-teal-900/70 to-teal-600/40' },
   { id: 'c6', name: 'Denim',       slug: 'denim',       image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=500&fit=crop', productCount: 143, gradient: 'from-blue-900/70 to-blue-600/40' },
   { id: 'c7', name: 'Co-ord Sets', slug: 'coords',      image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&h=500&fit=crop', productCount: 89,  gradient: 'from-cyan-900/70 to-cyan-600/40' },
-  { id: 'c8', name: 'Kaftans',     slug: 'kaftans',     image: 'https://images.unsplash.com/photo-1583391733987-e2c4b7290c3a?w=400&h=500&fit=crop', productCount: 74,  gradient: 'from-orange-900/70 to-orange-600/40' },
+  { id: 'c8', name: 'Kaftans',     slug: 'kaftans',     image: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=400&h=500&fit=crop', productCount: 74,  gradient: 'from-orange-900/70 to-orange-600/40' },
+  { id: 'c9', name: 'Shirts',      slug: 'shirts',      image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400&h=500&fit=crop', productCount: 120, gradient: 'from-sky-900/70 to-sky-600/40' },
 ];
 
 // ─── Mock Reviews ──────────────────────────────────────────────────────────────
@@ -164,10 +165,10 @@ const RAW_PRODUCTS = [
     material: '100% Khadi Cotton',
     careInstructions: 'Hand wash cold. Dry in shade.',
     variants: [
-      { size: 'S', color: 'Ivory', colorHex: '#FFFFF0', stock: 25, sku: 'DC-MKR-001-S' },
-      { size: 'M', color: 'Ivory', colorHex: '#FFFFF0', stock: 30, sku: 'DC-MKR-001-M' },
-      { size: 'L', color: 'Ivory', colorHex: '#FFFFF0', stock: 20, sku: 'DC-MKR-001-L' },
-      { size: 'XL', color: 'Ivory', colorHex: '#FFFFF0', stock: 15, sku: 'DC-MKR-001-XL' }
+      { size: 'S', color: 'Indigo', image: '/images/products/traditional-indigo-block-print-kurta.png', colorHex: '#1E3A8A', stock: 25, sku: 'DC-MKR-001-S' },
+      { size: 'M', color: 'Indigo', image: '/images/products/traditional-indigo-block-print-kurta.png', colorHex: '#1E3A8A', stock: 30, sku: 'DC-MKR-001-M' },
+      { size: 'L', color: 'Indigo', image: '/images/products/traditional-indigo-block-print-kurta.png', colorHex: '#1E3A8A', stock: 20, sku: 'DC-MKR-001-L' },
+      { size: 'XL', color: 'Indigo', image: '/images/products/traditional-indigo-block-print-kurta.png', colorHex: '#1E3A8A', stock: 15, sku: 'DC-MKR-001-XL' }
     ],
     reviews: SAMPLE_REVIEWS.slice(0, 1),
     isFeatured: true,
@@ -179,8 +180,8 @@ const RAW_PRODUCTS = [
     name: "Breezy Classic Linen Shirt",
     slug: 'breezy-classic-linen-shirt',
     brand: 'UrbanThreads',
-    category: 'Tops',
-    categorySlug: 'tops',
+    category: 'Shirts',
+    categorySlug: 'shirts',
     vendor: VENDORS[0]!,
     description: "Breezy and comfortable white linen shirt with a classic collar. Perfect for everyday casual wear.",
     longDescription: "Breezy and comfortable white linen shirt with a classic collar. Perfect for everyday casual wear. Made with premium materials and high attention to detail for maximum comfort and style.",
@@ -281,9 +282,9 @@ const RAW_PRODUCTS = [
     material: 'Dupion Silk',
     careInstructions: 'Dry clean only.',
     variants: [
-      { size: 'S', color: 'Rose Gold', colorHex: '#B76E79', stock: 20, sku: 'DC-MNJ-001-S' },
-      { size: 'M', color: 'Rose Gold', colorHex: '#B76E79', stock: 25, sku: 'DC-MNJ-001-M' },
-      { size: 'L', color: 'Rose Gold', colorHex: '#B76E79', stock: 20, sku: 'DC-MNJ-001-L' }
+      { size: 'S', color: 'Rose Gold', image: '/images/products/crimson-lehenga-choli-set-2.png', colorHex: '#B76E79', stock: 20, sku: 'DC-MNJ-001-S' },
+      { size: 'M', color: 'Rose Gold', image: '/images/products/crimson-lehenga-choli-set-2.png', colorHex: '#B76E79', stock: 25, sku: 'DC-MNJ-001-M' },
+      { size: 'L', color: 'Rose Gold', image: '/images/products/crimson-lehenga-choli-set-2.png', colorHex: '#B76E79', stock: 20, sku: 'DC-MNJ-001-L' }
     ],
     reviews: SAMPLE_REVIEWS.slice(0, 2),
     isFeatured: false,
@@ -300,7 +301,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[0]!,
     description: "Modern slim fit denim in dark charcoal wash. Built with active stretch comfort technology.",
     longDescription: "Modern slim fit denim in dark charcoal wash. Built with active stretch comfort technology. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1542272604-787c3835535d?w=800"],
+    images: ["https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800"],
     basePrice: 2499,
     rating: 4.5,
     reviewCount: 65,
@@ -328,7 +329,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[0]!,
     description: "Ultra-soft organic cotton t-shirt. The perfect base layer for any casual outfit.",
     longDescription: "Ultra-soft organic cotton t-shirt. The perfect base layer for any casual outfit. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800"],
+    images: ["https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800"],
     basePrice: 999,
     rating: 4.7,
     reviewCount: 142,
@@ -384,7 +385,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[0]!,
     description: "Relaxed cargo pants with elastic cuffs and multiple utility pockets. Styled for urban exploration.",
     longDescription: "Relaxed cargo pants with elastic cuffs and multiple utility pockets. Styled for urban exploration. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1542272604-787c3835535d?w=800"],
+    images: ["https://images.unsplash.com/photo-1517445312882-bc9910d016b7?w=800"],
     basePrice: 2799,
     rating: 4.4,
     reviewCount: 89,
@@ -407,12 +408,12 @@ const RAW_PRODUCTS = [
     name: "Heavyweight Canvas Utility Overshirt",
     slug: 'heavyweight-canvas-utility-overshirt',
     brand: 'UrbanThreads',
-    category: 'Tops',
-    categorySlug: 'tops',
+    category: 'Shirts',
+    categorySlug: 'shirts',
     vendor: VENDORS[0]!,
     description: "Rugged shirt-jacket with double chest pockets and heavy-duty button closures. Versatile seasonal layering.",
     longDescription: "Rugged shirt-jacket with double chest pockets and heavy-duty button closures. Versatile seasonal layering. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800"],
+    images: ["https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800"],
     basePrice: 2399,
     rating: 4.6,
     reviewCount: 110,
@@ -450,8 +451,8 @@ const RAW_PRODUCTS = [
     material: '80% Pure Cotton, 20% Silk Blend',
     careInstructions: 'Dry clean only. Store in a muslin bag.',
     variants: [
-      { size: 'S', color: 'Ivory', colorHex: '#FFFFF0', stock: 15, sku: 'DC-EAK-001-S' },
-      { size: 'M', color: 'Ivory', colorHex: '#FFFFF0', stock: 20, sku: 'DC-EAK-001-M' }
+      { size: 'S', color: 'Ivory', image: '/images/products/ivory_anarkali.png', colorHex: '#FFFFF0', stock: 15, sku: 'DC-EAK-001-S' },
+      { size: 'M', color: 'Ivory', image: '/images/products/ivory_anarkali.png', colorHex: '#FFFFF0', stock: 20, sku: 'DC-EAK-001-M' }
     ],
     reviews: SAMPLE_REVIEWS.slice(0, 2),
     isFeatured: true,
@@ -478,8 +479,8 @@ const RAW_PRODUCTS = [
     material: 'Banarasi Silk, Velvet Border',
     careInstructions: 'Dry clean only.',
     variants: [
-      { size: 'S', color: 'Ivory', colorHex: '#FFFFF0', stock: 5, sku: 'DC-CLC-001-S' },
-      { size: 'M', color: 'Ivory', colorHex: '#FFFFF0', stock: 8, sku: 'DC-CLC-001-M' }
+      { size: 'S', color: 'Crimson Red', image: '/images/products/crimson-banarasi-lehenga-choli.png', colorHex: '#DC2626', stock: 5, sku: 'DC-CLC-001-S' },
+      { size: 'M', color: 'Crimson Red', image: '/images/products/crimson-banarasi-lehenga-choli.png', colorHex: '#DC2626', stock: 8, sku: 'DC-CLC-001-M' }
     ],
     reviews: SAMPLE_REVIEWS.slice(0, 3),
     isFeatured: true,
@@ -506,7 +507,7 @@ const RAW_PRODUCTS = [
     material: 'Pure Georgette',
     careInstructions: 'Hand wash only.',
     variants: [
-      { size: 'Free Size', color: 'Teal', colorHex: '#008080', stock: 20, sku: 'DC-TBS-001-FS' }
+      { size: 'Free Size', color: 'Bandhani Red', image: '/images/products/georgette-bandhani-saree.png', colorHex: '#C026D3', stock: 20, sku: 'DC-TBS-001-FS' }
     ],
     reviews: SAMPLE_REVIEWS.slice(0, 1),
     isFeatured: true,
@@ -533,8 +534,8 @@ const RAW_PRODUCTS = [
     material: 'Viscose Rayon',
     careInstructions: 'Machine wash gentle. Tumble dry low.',
     variants: [
-      { size: 'S', color: 'Navy', colorHex: '#000080', stock: 18, sku: 'UT-MFD-001-S' },
-      { size: 'M', color: 'Navy', colorHex: '#000080', stock: 22, sku: 'UT-MFD-001-M' }
+      { size: 'S', color: 'Floral Red', colorHex: '#E11D48', stock: 18, sku: 'UT-MFD-001-S' },
+      { size: 'M', color: 'Floral Red', colorHex: '#E11D48', stock: 22, sku: 'UT-MFD-001-M' }
     ],
     reviews: SAMPLE_REVIEWS.slice(0, 2),
     isFeatured: true,
@@ -574,8 +575,8 @@ const RAW_PRODUCTS = [
     name: "Oversized Pure Linen Shirt",
     slug: 'oversized-pure-linen-shirt',
     brand: 'VelveteenRose',
-    category: 'Tops',
-    categorySlug: 'tops',
+    category: 'Shirts',
+    categorySlug: 'shirts',
     vendor: VENDORS[4]!,
     description: "Oversized linen shirt in sage green. Wear open as a jacket or buttoned up. Versatile wardrobe essential.",
     longDescription: "Oversized linen shirt in sage green. Wear open as a jacket or buttoned up. Versatile wardrobe essential. Made with premium materials and high attention to detail for maximum comfort and style.",
@@ -589,8 +590,8 @@ const RAW_PRODUCTS = [
     material: '100% Linen',
     careInstructions: 'Machine wash cold.',
     variants: [
-      { size: 'S', color: 'Olive', colorHex: '#808000', stock: 25, sku: 'VR-SGL-001-S' },
-      { size: 'M', color: 'Olive', colorHex: '#808000', stock: 30, sku: 'VR-SGL-001-M' }
+      { size: 'S', color: 'White', colorHex: '#FFFFFF', stock: 25, sku: 'VR-SGL-001-S' },
+      { size: 'M', color: 'White', colorHex: '#FFFFFF', stock: 30, sku: 'VR-SGL-001-M' }
     ],
     reviews: SAMPLE_REVIEWS.slice(0, 1),
     isFeatured: true,
@@ -607,7 +608,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[0]!,
     description: "Classic high-rise straight cut in authentic denim. Timeless, flattering silhouette.",
     longDescription: "Classic high-rise straight cut in authentic denim. Timeless, flattering silhouette. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1542272604-787c3835535d?w=800"],
+    images: ["https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800"],
     basePrice: 2299,
     rating: 4.8,
     reviewCount: 567,
@@ -635,7 +636,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[4]!,
     description: "Vibrant block-print kaftan in lightweight cotton. Breezy beach cover-up or loungewear.",
     longDescription: "Vibrant block-print kaftan in lightweight cotton. Breezy beach cover-up or loungewear. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1583391733987-e2c4b7290c3a?w=800"],
+    images: ["https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800"],
     basePrice: 2099,
     rating: 4.5,
     reviewCount: 167,
@@ -728,8 +729,8 @@ const RAW_PRODUCTS = [
     material: '100% Pure Cotton',
     careInstructions: 'Machine wash cold. Dry in shade.',
     variants: [
-      { size: '4-5Y', color: 'Mustard', colorHex: '#FFDB58', stock: 25, sku: 'DC-BCK-001-45' },
-      { size: '6-7Y', color: 'Mustard', colorHex: '#FFDB58', stock: 30, sku: 'DC-BCK-001-67' }
+      { size: '4-5Y', color: 'Mustard', image: '/images/products/mustard_kurta.png', colorHex: '#FFDB58', stock: 25, sku: 'DC-BCK-001-45' },
+      { size: '6-7Y', color: 'Mustard', image: '/images/products/mustard_kurta.png', colorHex: '#FFDB58', stock: 30, sku: 'DC-BCK-001-67' }
     ],
     reviews: SAMPLE_REVIEWS.slice(0, 3),
     isFeatured: true,
@@ -741,8 +742,8 @@ const RAW_PRODUCTS = [
     name: "Mandarin Collar Cotton Linen Shirt",
     slug: 'mandarin-collar-cotton-linen-shirt',
     brand: 'UrbanThreads',
-    category: 'Tops',
-    categorySlug: 'tops',
+    category: 'Shirts',
+    categorySlug: 'shirts',
     vendor: VENDORS[0]!,
     description: "Smart linen shirt for boys with high mandarin collar. Light, airy, and styled for warm afternoons.",
     longDescription: "Smart linen shirt for boys with high mandarin collar. Light, airy, and styled for warm afternoons. Made with premium materials and high attention to detail for maximum comfort and style.",
@@ -840,8 +841,8 @@ const RAW_PRODUCTS = [
     material: 'Silk Blend',
     careInstructions: 'Dry clean only.',
     variants: [
-      { size: '6-7Y', color: 'Rose Gold', colorHex: '#B76E79', stock: 15, sku: 'DC-BFN-001-67' },
-      { size: '8-9Y', color: 'Rose Gold', colorHex: '#B76E79', stock: 20, sku: 'DC-BFN-001-89' }
+      { size: '6-7Y', color: 'Rose Gold', image: '/images/products/crimson-lehenga-choli-set-2.png', colorHex: '#B76E79', stock: 15, sku: 'DC-BFN-001-67' },
+      { size: '8-9Y', color: 'Rose Gold', image: '/images/products/crimson-lehenga-choli-set-2.png', colorHex: '#B76E79', stock: 20, sku: 'DC-BFN-001-89' }
     ],
     reviews: SAMPLE_REVIEWS.slice(0, 1),
     isFeatured: true,
@@ -858,7 +859,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[0]!,
     description: "Everyday comfortable crewneck t-shirt in pure organic cotton. Soft and durable.",
     longDescription: "Everyday comfortable crewneck t-shirt in pure organic cotton. Soft and durable. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800"],
+    images: ["https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800"],
     basePrice: 699,
     rating: 4.7,
     reviewCount: 110,
@@ -914,7 +915,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[2]!,
     description: "Lace-up sneakers in durable canvas with dual-density rubber toe cap for playgrounds.",
     longDescription: "Lace-up sneakers in durable canvas with dual-density rubber toe cap for playgrounds. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1533867617858-e7b97e060509?w=800"],
+    images: ["https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=800"],
     basePrice: 1099,
     rating: 4.5,
     reviewCount: 63,
@@ -942,7 +943,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[0]!,
     description: "Adventure-ready cargo shorts with utility flap pockets. Soft elastic waist loops.",
     longDescription: "Adventure-ready cargo shorts with utility flap pockets. Soft elastic waist loops. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1542272604-787c3835535d?w=800"],
+    images: ["https://images.unsplash.com/photo-1517445312882-bc9910d016b7?w=800"],
     basePrice: 999,
     rating: 4.4,
     reviewCount: 31,
@@ -970,7 +971,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[0]!,
     description: "Classic cotton piqu\u00e9 polo with athletic stripes. Embroidered crest detail on chest.",
     longDescription: "Classic cotton piqu\u00e9 polo with athletic stripes. Embroidered crest detail on chest. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800"],
+    images: ["https://images.unsplash.com/photo-1625910513413-89803153d36b?w=800"],
     basePrice: 899,
     rating: 4.6,
     reviewCount: 52,
@@ -1008,8 +1009,8 @@ const RAW_PRODUCTS = [
     material: 'Georgette Silk, Cotton Lining',
     careInstructions: 'Dry clean recommended.',
     variants: [
-      { size: '4-5Y', color: 'Rose Gold', colorHex: '#B76E79', stock: 15, sku: 'DC-GEL-001-45' },
-      { size: '6-7Y', color: 'Rose Gold', colorHex: '#B76E79', stock: 20, sku: 'DC-GEL-001-67' }
+      { size: '4-5Y', color: 'Rose Gold', image: '/images/products/crimson-lehenga-choli-set-2.png', colorHex: '#B76E79', stock: 15, sku: 'DC-GEL-001-45' },
+      { size: '6-7Y', color: 'Rose Gold', image: '/images/products/crimson-lehenga-choli-set-2.png', colorHex: '#B76E79', stock: 20, sku: 'DC-GEL-001-67' }
     ],
     reviews: SAMPLE_REVIEWS.slice(0, 1),
     isFeatured: true,
@@ -1054,7 +1055,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[0]!,
     description: "Classic overall dress in soft pre-washed denim. Adjustable metal slides on straps.",
     longDescription: "Classic overall dress in soft pre-washed denim. Adjustable metal slides on straps. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1542272604-787c3835535d?w=800"],
+    images: ["https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=800"],
     basePrice: 1499,
     rating: 4.6,
     reviewCount: 29,
@@ -1082,7 +1083,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[2]!,
     description: "Charming flat shoes with secure hook-and-loop strap. Accent bow detailing on front toe.",
     longDescription: "Charming flat shoes with secure hook-and-loop strap. Accent bow detailing on front toe. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1508215885820-4585e56135c8?w=800"],
+    images: ["https://images.unsplash.com/photo-1554284126-aa88f22d8b74?w=800"],
     basePrice: 1199,
     rating: 4.5,
     reviewCount: 46,
@@ -1120,8 +1121,8 @@ const RAW_PRODUCTS = [
     material: '100% Jaipur Cotton',
     careInstructions: 'Wash separately in cold water.',
     variants: [
-      { size: '6-7Y', color: 'Mustard', colorHex: '#FFDB58', stock: 15, sku: 'DC-GBP-001-67' },
-      { size: '8-9Y', color: 'Mustard', colorHex: '#FFDB58', stock: 20, sku: 'DC-GBP-001-89' }
+      { size: '6-7Y', color: 'Mustard', image: '/images/products/mustard_kurta.png', colorHex: '#FFDB58', stock: 15, sku: 'DC-GBP-001-67' },
+      { size: '8-9Y', color: 'Mustard', image: '/images/products/mustard_kurta.png', colorHex: '#FFDB58', stock: 20, sku: 'DC-GBP-001-89' }
     ],
     reviews: SAMPLE_REVIEWS.slice(0, 2),
     isFeatured: false,
@@ -1165,7 +1166,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[2]!,
     description: "Party-perfect ballerina flats covered in subtle glitter mesh. Non-slip outsole.",
     longDescription: "Party-perfect ballerina flats covered in subtle glitter mesh. Non-slip outsole. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=800"],
+    images: ["https://images.unsplash.com/photo-1560343776-97e7d202ff0e?w=800"],
     basePrice: 1399,
     rating: 4.6,
     reviewCount: 52,
@@ -1276,7 +1277,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[3]!,
     description: "Genuine full-grain leather belt with solid brass buckle. Brushed hardware finish.",
     longDescription: "Genuine full-grain leather belt with solid brass buckle. Brushed hardware finish. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800"],
+    images: ["https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=800"],
     basePrice: 1299,
     rating: 4.8,
     reviewCount: 97,
@@ -1304,7 +1305,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[3]!,
     description: "Sleek wallet cardholder with 4 card slots and central cash sleeve. RFID blocking design.",
     longDescription: "Sleek wallet cardholder with 4 card slots and central cash sleeve. RFID blocking design. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800"],
+    images: ["https://images.unsplash.com/photo-1606503830058-c39242c38865?w=800"],
     basePrice: 899,
     rating: 4.7,
     reviewCount: 112,
@@ -1439,7 +1440,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[3]!,
     description: "Full-grain leather structured tote in tan. Magnetic snap closure, internal zip pocket, laptop sleeve.",
     longDescription: "Full-grain leather structured tote in tan. Magnetic snap closure, internal zip pocket, laptop sleeve. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800"],
+    images: ["https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800"],
     basePrice: 5499,
     rating: 4.8,
     reviewCount: 178,
@@ -1493,7 +1494,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[3]!,
     description: "Embellished minaudi\u00e8re in antique gold with intricate bead work. Removable chain strap.",
     longDescription: "Embellished minaudi\u00e8re in antique gold with intricate bead work. Removable chain strap. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800"],
+    images: ["https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?w=800"],
     basePrice: 3299,
     rating: 4.6,
     reviewCount: 67,
@@ -1520,7 +1521,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[3]!,
     description: "Set of 3 layered bead chokers \u2014 miyuki beads, seed pearls and brass chain. Mix and match.",
     longDescription: "Set of 3 layered bead chokers \u2014 miyuki beads, seed pearls and brass chain. Mix and match. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=800"],
+    images: ["https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800"],
     basePrice: 1499,
     rating: 4.5,
     reviewCount: 213,
@@ -1547,7 +1548,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[3]!,
     description: "Charming pre-tied boys bow tie with adjustable neck strap. Perfect styling for family photography.",
     longDescription: "Charming pre-tied boys bow tie with adjustable neck strap. Perfect styling for family photography. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=800"],
+    images: ["https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800"],
     basePrice: 399,
     rating: 4.6,
     reviewCount: 18,
@@ -1557,7 +1558,7 @@ const RAW_PRODUCTS = [
     material: 'Polyester Satin',
     careInstructions: 'Spot clean only.',
     variants: [
-      { size: 'Free Size', color: 'Crimson Red', colorHex: '#B7410E', stock: 50, sku: 'GC-BOW-001' }
+      { size: 'Free Size', color: 'Crimson Red', image: '/images/products/crimson-banarasi-lehenga-choli.png', colorHex: '#B7410E', stock: 50, sku: 'GC-BOW-001' }
     ],
     reviews: SAMPLE_REVIEWS.slice(0, 3),
     isFeatured: false,
@@ -1611,7 +1612,7 @@ const RAW_PRODUCTS = [
     material: 'Soft Acrylic Wool',
     careInstructions: 'Machine wash cold on gentle.',
     variants: [
-      { size: 'Free Size', color: 'Mustard', colorHex: '#FFDB58', stock: 40, sku: 'GC-BEN-001' }
+      { size: 'Free Size', color: 'Mustard', image: '/images/products/mustard_kurta.png', colorHex: '#FFDB58', stock: 40, sku: 'GC-BEN-001' }
     ],
     reviews: SAMPLE_REVIEWS.slice(0, 2),
     isFeatured: false,
@@ -1655,7 +1656,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[3]!,
     description: "Pack of 3 pairs of socks with cute knitted dinosaur patterns. Elastic ankle cuffs.",
     longDescription: "Pack of 3 pairs of socks with cute knitted dinosaur patterns. Elastic ankle cuffs. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=800"],
+    images: ["https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?w=800"],
     basePrice: 299,
     rating: 4.6,
     reviewCount: 65,
@@ -1682,7 +1683,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[3]!,
     description: "Set of 3 charming headbands with silk chiffon flower appliques. Soft elastic band won't leave marks.",
     longDescription: "Set of 3 charming headbands with silk chiffon flower appliques. Soft elastic band won't leave marks. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=800"],
+    images: ["https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=800"],
     basePrice: 349,
     rating: 4.7,
     reviewCount: 41,
@@ -1709,7 +1710,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[3]!,
     description: "Colorful stretchy bracelet with acrylic candy beads and a metal unicorn charm. Lead free.",
     longDescription: "Colorful stretchy bracelet with acrylic candy beads and a metal unicorn charm. Lead free. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=800"],
+    images: ["https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800"],
     basePrice: 249,
     rating: 4.6,
     reviewCount: 23,
@@ -1763,7 +1764,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[3]!,
     description: "Ultra-soft plush bag with embroidered eyes, metallic horn, and zipper closure. Holds small treasures.",
     longDescription: "Ultra-soft plush bag with embroidered eyes, metallic horn, and zipper closure. Holds small treasures. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800"],
+    images: ["https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=800"],
     basePrice: 799,
     rating: 4.8,
     reviewCount: 52,
@@ -1790,7 +1791,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[3]!,
     description: "Pack of 5 large grosgrain ribbon bow clips on metal alligator clamps. Beautiful colors.",
     longDescription: "Pack of 5 large grosgrain ribbon bow clips on metal alligator clamps. Beautiful colors. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=800"],
+    images: ["https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=800"],
     basePrice: 399,
     rating: 4.7,
     reviewCount: 41,
@@ -1871,12 +1872,12 @@ const RAW_PRODUCTS = [
     name: "Oversized Denim Overshirt",
     slug: 'oversized-denim-overshirt',
     brand: 'UrbanThreads',
-    category: 'Denim',
-    categorySlug: 'denim',
+    category: 'Shirts',
+    categorySlug: 'shirts',
     vendor: VENDORS[0]!,
     description: "Relaxed-fit overshirt in medium wash durable cotton denim. Classic button-down style for layering.",
     longDescription: "Relaxed-fit overshirt in medium wash durable cotton denim. Classic button-down style for layering. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1542272604-787c3835535d?w=800"],
+    images: ["https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800"],
     basePrice: 2499,
     rating: 4.6,
     reviewCount: 64,
@@ -1905,7 +1906,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[0]!,
     description: "Modern cargo pants with elasticated waistband and drawstrings. Durable canvas fabric with multi-utility pockets.",
     longDescription: "Modern cargo pants with elasticated waistband and drawstrings. Durable canvas fabric with multi-utility pockets. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1542272604-787c3835535d?w=800"],
+    images: ["https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=800"],
     basePrice: 2799,
     rating: 4.5,
     reviewCount: 52,
@@ -1933,7 +1934,7 @@ const RAW_PRODUCTS = [
     vendor: VENDORS[3]!,
     description: "Rugged and waterproof travel duffle bag with a spacious main compartment, shoe pocket, and adjustable shoulder strap.",
     longDescription: "Rugged and waterproof travel duffle bag with a spacious main compartment, shoe pocket, and adjustable shoulder strap. Made with premium materials and high attention to detail for maximum comfort and style.",
-    images: ["https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800"],
+    images: ["https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800"],
     basePrice: 3499,
     rating: 4.8,
     reviewCount: 47,
@@ -1952,17 +1953,48 @@ const RAW_PRODUCTS = [
   }
 ];
 
-// Derive shortcut fields and variant prices automatically
-export const PRODUCTS: Product[] = RAW_PRODUCTS.map((p) => ({
-  ...p,
-  vendorId:   p.vendor.id,
-  vendorName: p.vendor.name,
-  vendorSlug: p.vendor.slug,
-  variants: p.variants.map((v) => ({
-    ...v,
-    price: (v as { price?: number }).price ?? p.basePrice,
-  })),
-}));
+const ALL_MOCK_REVIEWS: Review[] = [
+  { id: 'r1', author: 'Priya M.', avatar: 'P', rating: 5, date: '12 Jul 2026', title: 'Absolutely stunning!', body: 'The fabric quality is incredible. Fits perfectly and the colour is even more beautiful in person. Will definitely order again!', verified: true, helpful: 24 },
+  { id: 'r2', author: 'Ananya S.', avatar: 'A', rating: 4, date: '8 Jul 2026', title: 'Great quality, slightly large', body: 'Love the design and fabric but I should have sized down. The details are exquisite though. Customer service was very helpful.', verified: true, helpful: 11 },
+  { id: 'r3', author: 'Riya K.', avatar: 'R', rating: 5, date: '3 Jul 2026', title: 'Perfect for festive season', body: 'Ordered this for a wedding and received SO many compliments. The embroidery work is gorgeous. Packaging was also very premium.', verified: true, helpful: 38 },
+  { id: 'r4', author: 'Neha T.', avatar: 'N', rating: 4, date: '28 Jun 2026', title: 'Beautiful piece', body: 'Very well made. The stitching is clean and the colours are vibrant. Delivery was faster than expected too!', verified: true, helpful: 7 },
+  { id: 'r5', author: 'Sneha G.', avatar: 'S', rating: 5, date: '24 Jun 2026', title: 'Worth every rupee', body: 'Super comfortable fit and elegant design. Premium feel right out of the box!', verified: true, helpful: 15 },
+  { id: 'r6', author: 'Kavita P.', avatar: 'K', rating: 3, date: '19 Jun 2026', title: 'Decent quality', body: 'Looks nice, though material is a bit lighter than expected. Fine for casual outings.', verified: true, helpful: 4 },
+];
+
+// Derive shortcut fields and variant prices automatically with synced reviews & ratings
+export const PRODUCTS: Product[] = RAW_PRODUCTS.map((p, pIdx) => {
+  const count = 3 + (pIdx % 2);
+  const reviews: Review[] = [];
+  let sum = 0;
+  for (let i = 0; i < count; i++) {
+    const rev = ALL_MOCK_REVIEWS[(pIdx + i) % ALL_MOCK_REVIEWS.length]!;
+    reviews.push({
+      ...rev,
+      id: `rev-${p.id}-${i + 1}`,
+    });
+    sum += rev.rating;
+  }
+  const calcRating = Math.round((sum / count) * 10) / 10;
+
+  const localImg = `/images/products/${p.slug}.png`;
+  const productImages = [localImg, ...p.images.filter((img) => img !== localImg)];
+
+  return {
+    ...p,
+    images: productImages,
+    rating: calcRating,
+    reviewCount: reviews.length,
+    reviews,
+    vendorId:   p.vendor.id,
+    vendorName: p.vendor.name,
+    vendorSlug: p.vendor.slug,
+    variants: p.variants.map((v) => ({
+      ...v,
+      price: (v as { price?: number }).price ?? p.basePrice,
+    })),
+  };
+});
 
 // ─── Testimonials ──────────────────────────────────────────────────────────────
 export const TESTIMONIALS = [

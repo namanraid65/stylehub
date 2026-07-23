@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -6,71 +6,34 @@ import { Input } from '../../components/ui/input';
 import type { LucideIcon } from 'lucide-react';
 import {
   MessageSquare, Search, Filter, Clock, CheckCircle2,
-  AlertCircle, XCircle, Send, ChevronDown, X, User, Mail, Phone,
+  AlertCircle, XCircle, Send, ChevronDown, X, User, Mail, Phone, Loader2, RefreshCw,
 } from 'lucide-react';
+import enquiryApi, { Enquiry as ApiEnquiry, EnquiryStatus } from '../../api/enquiry.api';
 import { cn } from '../../lib/utils';
 
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-type EnquiryStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
-type EnquiryType   = 'general' | 'quote' | 'bulk_order' | 'custom';
-
-interface Reply { from: string; message: string; isAdmin: boolean; createdAt: string; }
-interface Enquiry {
-  id:           string;
-  name:         string;
-  email:        string;
-  phone?:       string;
-  subject:      string;
-  message:      string;
-  enquiryType:  EnquiryType;
-  productName?: string;
-  status:       EnquiryStatus;
-  replies:      Reply[];
-  createdAt:    string;
+// Local normalized interface for UI
+interface LocalReply {
+  from: string;
+  message: string;
+  isAdmin: boolean;
+  createdAt: string;
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const MOCK: Enquiry[] = [
-  {
-    id: 'enq-001', name: 'Rahul Verma', email: 'rahul@email.com', phone: '+91 9876543210',
-    subject: 'Bulk Order — Ivory Anarkali Kurta', message: 'Hi, I am looking to order 50 pieces of the Ivory Anarkali Kurta for a corporate gifting event. Can you provide a bulk discount and estimated lead time?',
-    enquiryType: 'bulk_order', productName: 'Ivory Embroidered Anarkali Kurta',
-    status: 'open', replies: [], createdAt: new Date(Date.now() - 30*60000).toISOString(),
-  },
-  {
-    id: 'enq-002', name: 'Priya Sharma', email: 'priya@gmail.com',
-    subject: 'Custom embroidery request',
-    message: 'I love the Anarkali collection. Is it possible to get the embroidery in gold thread instead of white for a wedding order? We need 5 pieces.',
-    enquiryType: 'custom', productName: 'Ivory Embroidered Anarkali Kurta',
-    status: 'in_progress',
-    replies: [
-      { from: 'DesiCouture', message: 'Thank you for your enquiry! Yes, we can do custom gold thread embroidery. The lead time would be 3–4 weeks. Can you share the event date?', isAdmin: false, createdAt: new Date(Date.now() - 2*3600000).toISOString() },
-    ],
-    createdAt: new Date(Date.now() - 5*3600000).toISOString(),
-  },
-  {
-    id: 'enq-003', name: 'Ananya Singh', email: 'ananya@corp.in', phone: '+91 9988776655',
-    subject: 'Quote Request — Midnight Floral Maxi', message: 'Please provide pricing for 15 pieces of the Midnight Floral Maxi in sizes S, M, L for a boutique store.',
-    enquiryType: 'quote', productName: 'Midnight Floral Maxi Dress',
-    status: 'resolved',
-    replies: [
-      { from: 'UrbanThreads', message: 'Quote attached: 15 pcs at ₹2,400/unit (bulk rate). Includes free delivery for orders above ₹30,000. Valid for 7 days.', isAdmin: false, createdAt: new Date(Date.now() - 24*3600000).toISOString() },
-    ],
-    createdAt: new Date(Date.now() - 2*86400000).toISOString(),
-  },
-  {
-    id: 'enq-004', name: 'Meera Patel', email: 'meera@gmail.com',
-    subject: 'General question about care instructions',
-    message: 'Can the Camel Ribbed Co-ord Set be machine washed? The tag says hand wash but I want to confirm.',
-    enquiryType: 'general', productName: 'Camel Ribbed Knit Co-ord Set',
-    status: 'closed',
-    replies: [
-      { from: 'Admin', message: 'Hi Meera! The fabric is delicate — we recommend hand wash cold with mild detergent. Machine wash on delicate cycle (cold) is acceptable but may reduce longevity.', isAdmin: true, createdAt: new Date(Date.now() - 3*86400000).toISOString() },
-    ],
-    createdAt: new Date(Date.now() - 4*86400000).toISOString(),
-  },
-];
+interface LocalEnquiry {
+  id: string;
+  ticketId?: string | undefined;
+  name: string;
+  email: string;
+  phone?: string | undefined;
+  subject: string;
+  message: string;
+  enquiryType: string;
+  productName?: string | undefined;
+  status: EnquiryStatus;
+  replies: LocalReply[];
+  createdAt: string;
+  rawApiObject: ApiEnquiry;
+}
 
 const STATUS_CONFIG: Record<EnquiryStatus, { label: string; color: string; Icon: LucideIcon }> = {
   open:        { label: 'Open',        color: 'bg-blue-100 text-blue-700 border-blue-200',    Icon: AlertCircle },
@@ -79,12 +42,8 @@ const STATUS_CONFIG: Record<EnquiryStatus, { label: string; color: string; Icon:
   closed:      { label: 'Closed',      color: 'bg-slate-100 text-slate-600 border-slate-200', Icon: XCircle },
 };
 
-
-const TYPE_LABELS: Record<EnquiryType, string> = {
-  general: 'General', quote: 'Quote', bulk_order: 'Bulk Order', custom: 'Custom',
-};
-
 const fmtTime = (iso: string) => {
+  if (!iso) return '';
   const d = new Date(iso);
   const diff = (Date.now() - d.getTime()) / 1000;
   if (diff < 3600)  return `${Math.floor(diff/60)}m ago`;
@@ -92,45 +51,116 @@ const fmtTime = (iso: string) => {
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 };
 
-// ─── Reply Thread ─────────────────────────────────────────────────────────────
-function ReplyThread({ enquiry, onClose }: { enquiry: Enquiry; onClose: () => void }) {
-  const [reply, setReply] = useState('');
-  const [replies, setReplies] = useState(enquiry.replies);
-  const { label: statusLabel, color: statusColor } = STATUS_CONFIG[enquiry.status];
+const normalizeEnquiry = (e: ApiEnquiry): LocalEnquiry => {
+  const userName = typeof e.user === 'object' && e.user ? e.user.name : 'Customer';
+  const userEmail = typeof e.user === 'object' && e.user ? e.user.email : '';
+  const prodName = typeof e.product === 'object' && e.product ? e.product.name : undefined;
 
-  const sendReply = () => {
-    if (!reply.trim()) return;
-    setReplies((r) => [...r, {
-      from: 'Admin', message: reply.trim(), isAdmin: true,
-      createdAt: new Date().toISOString(),
-    }]);
-    setReply('');
+  const replies: LocalReply[] = (e.replies || []).map((r) => ({
+    from: r.authorRole === 'admin' ? 'Admin' : (r.authorRole === 'vendor' ? 'Vendor' : 'Customer'),
+    message: r.message,
+    isAdmin: r.authorRole === 'admin',
+    createdAt: r.createdAt,
+  }));
+
+  return {
+    id: e._id,
+    ticketId: e.ticketId,
+    name: userName,
+    email: userEmail,
+    subject: e.subject,
+    message: e.message,
+    enquiryType: e.type,
+    productName: prodName,
+    status: e.status,
+    replies,
+    createdAt: e.createdAt,
+    rawApiObject: e,
+  };
+};
+
+// ─── Reply Thread ─────────────────────────────────────────────────────────────
+function ReplyThread({
+  enquiry,
+  onClose,
+  onRefresh,
+}: {
+  enquiry: LocalEnquiry;
+  onClose: () => void;
+  onRefresh: () => void;
+}) {
+  const [replyText, setReplyText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const { label: statusLabel, color: statusColor } = STATUS_CONFIG[enquiry.status] || STATUS_CONFIG.open;
+
+  const sendReply = async () => {
+    if (!replyText.trim() || sending) return;
+    setSending(true);
+    try {
+      await enquiryApi.reply(enquiry.id, replyText.trim());
+      setReplyText('');
+      onRefresh();
+    } catch (err) {
+      console.error('Failed to send reply:', err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: EnquiryStatus) => {
+    setUpdatingStatus(true);
+    try {
+      await enquiryApi.updateStatus(enquiry.id, newStatus);
+      onRefresh();
+    } catch (err) {
+      console.error('Failed to update enquiry status:', err);
+    } finally {
+      setUpdatingStatus(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative ml-auto w-full max-w-lg bg-white shadow-2xl flex flex-col h-full">
+      <div className="relative ml-auto w-full max-w-lg bg-white dark:bg-slate-900 shadow-2xl flex flex-col h-full">
         {/* Header */}
-        <div className="flex items-start justify-between p-5 border-b">
+        <div className="flex items-start justify-between p-5 border-b dark:border-slate-800">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full border', statusColor)}>{statusLabel}</span>
-              <span className="text-xs text-muted-foreground">{TYPE_LABELS[enquiry.enquiryType]}</span>
+              <span className="text-xs text-muted-foreground uppercase">{enquiry.enquiryType}</span>
             </div>
             <h3 className="font-semibold text-base line-clamp-1">{enquiry.subject}</h3>
             {enquiry.productName && (
               <p className="text-xs text-muted-foreground mt-0.5">Product: {enquiry.productName}</p>
             )}
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><X className="h-4 w-4" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
-        {/* Customer info */}
-        <div className="p-4 bg-muted/20 border-b space-y-1.5">
-          <div className="flex items-center gap-2 text-xs"><User className="h-3.5 w-3.5 text-muted-foreground" />{enquiry.name}</div>
-          <div className="flex items-center gap-2 text-xs"><Mail className="h-3.5 w-3.5 text-muted-foreground" />{enquiry.email}</div>
-          {enquiry.phone && <div className="flex items-center gap-2 text-xs"><Phone className="h-3.5 w-3.5 text-muted-foreground" />{enquiry.phone}</div>}
+        {/* Customer info & status picker */}
+        <div className="p-4 bg-muted/20 border-b dark:border-slate-800 flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs"><User className="h-3.5 w-3.5 text-muted-foreground" />{enquiry.name}</div>
+            <div className="flex items-center gap-2 text-xs"><Mail className="h-3.5 w-3.5 text-muted-foreground" />{enquiry.email}</div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Status:</label>
+            <select
+              disabled={updatingStatus}
+              value={enquiry.status}
+              onChange={(e) => handleStatusChange(e.target.value as EnquiryStatus)}
+              className="text-xs border rounded-lg px-2 py-1 bg-white dark:bg-slate-800 font-medium focus:outline-none"
+            >
+              <option value="open">Open</option>
+              <option value="in_progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
         </div>
 
         {/* Conversation */}
@@ -152,7 +182,7 @@ function ReplyThread({ enquiry, onClose }: { enquiry: Enquiry; onClose: () => vo
           </div>
 
           {/* Replies */}
-          {replies.map((r, i) => (
+          {enquiry.replies.map((r, i) => (
             <div key={i} className={cn('flex gap-3', r.isAdmin && 'flex-row-reverse')}>
               <div className={cn('h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold shrink-0',
                 r.isAdmin ? 'bg-violet-600 text-white' : 'bg-blue-100 text-blue-600')}>
@@ -174,22 +204,22 @@ function ReplyThread({ enquiry, onClose }: { enquiry: Enquiry; onClose: () => vo
 
         {/* Reply input */}
         {enquiry.status !== 'closed' && (
-          <div className="p-4 border-t">
+          <div className="p-4 border-t dark:border-slate-800">
             <div className="flex gap-2">
               <textarea
-                value={reply}
-                onChange={(e) => setReply(e.target.value)}
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
                 placeholder="Type your reply…"
                 rows={3}
-                className="flex-1 px-3 py-2 text-sm border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="flex-1 px-3 py-2 text-sm border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 dark:bg-slate-800"
                 onKeyDown={(e) => { if (e.key === 'Enter' && e.metaKey) sendReply(); }}
               />
               <button
                 onClick={sendReply}
-                disabled={!reply.trim()}
-                className="self-end px-4 py-2.5 rounded-xl bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                disabled={!replyText.trim() || sending}
+                className="self-end px-4 py-2.5 rounded-xl bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
               >
-                <Send className="h-4 w-4" />
+                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </button>
             </div>
             <p className="text-[10px] text-muted-foreground mt-1.5">⌘ + Enter to send</p>
@@ -202,19 +232,44 @@ function ReplyThread({ enquiry, onClose }: { enquiry: Enquiry; onClose: () => vo
 
 // ─── Main EnquiriesPage ───────────────────────────────────────────────────────
 export default function EnquiriesPage() {
-  const [search,     setSearch]     = useState('');
-  const [statusFilter, setStatus]   = useState<EnquiryStatus | 'all'>('all');
-  const [selected,   setSelected]   = useState<Enquiry | null>(null);
+  const [enquiries, setEnquiries] = useState<LocalEnquiry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatus] = useState<EnquiryStatus | 'all'>('all');
+  const [selected, setSelected] = useState<LocalEnquiry | null>(null);
 
-  const counts = {
-    all:         MOCK.length,
-    open:        MOCK.filter((e) => e.status === 'open').length,
-    in_progress: MOCK.filter((e) => e.status === 'in_progress').length,
-    resolved:    MOCK.filter((e) => e.status === 'resolved').length,
-    closed:      MOCK.filter((e) => e.status === 'closed').length,
+  const fetchEnquiries = async () => {
+    setLoading(true);
+    try {
+      const res = await enquiryApi.allEnquiries();
+      const rawList = res.data?.data || (res as any).data || [];
+      const normalized = rawList.map(normalizeEnquiry);
+      setEnquiries(normalized);
+
+      if (selected) {
+        const updatedSelected = normalized.find((e: LocalEnquiry) => e.id === selected.id);
+        if (updatedSelected) setSelected(updatedSelected);
+      }
+    } catch (err) {
+      console.error('Failed to fetch enquiries:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filtered = MOCK.filter((e) => {
+  useEffect(() => {
+    fetchEnquiries();
+  }, []);
+
+  const counts = {
+    all:         enquiries.length,
+    open:        enquiries.filter((e) => e.status === 'open').length,
+    in_progress: enquiries.filter((e) => e.status === 'in_progress').length,
+    resolved:    enquiries.filter((e) => e.status === 'resolved').length,
+    closed:      enquiries.filter((e) => e.status === 'closed').length,
+  };
+
+  const filtered = enquiries.filter((e) => {
     const matchSearch = !search || e.name.toLowerCase().includes(search.toLowerCase()) || e.subject.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'all' || e.status === statusFilter;
     return matchSearch && matchStatus;
@@ -222,30 +277,53 @@ export default function EnquiriesPage() {
 
   return (
     <>
-      {selected && <ReplyThread enquiry={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <ReplyThread
+          enquiry={selected}
+          onClose={() => setSelected(null)}
+          onRefresh={fetchEnquiries}
+        />
+      )}
 
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Enquiries</h1>
-          <p className="text-sm text-muted-foreground">Customer questions, quote requests, and vendor conversations</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold font-display">Enquiries</h1>
+            <p className="text-sm text-muted-foreground">Customer questions, quote requests, and support tickets</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={fetchEnquiries} disabled={loading} className="gap-2">
+            <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} /> Refresh
+          </Button>
         </div>
 
         {/* Status filter tabs */}
-        <div className="flex gap-1 border-b">
-          {([['all','All'], ['open','Open'], ['in_progress','In Progress'], ['resolved','Resolved'], ['closed','Closed']] as const).map(([key, label]) => (
+        <div className="flex gap-1 border-b overflow-x-auto">
+          {(
+            [
+              ['all', 'All'],
+              ['open', 'Open'],
+              ['in_progress', 'In Progress'],
+              ['resolved', 'Resolved'],
+              ['closed', 'Closed'],
+            ] as const
+          ).map(([key, label]) => (
             <button
               key={key}
-              onClick={() => setStatus(key)}
+              onClick={() => setStatus(key as any)}
               className={cn(
-                'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors',
+                'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors shrink-0',
                 statusFilter === key
                   ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground',
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               )}
             >
               {label}
-              <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-bold',
-                statusFilter === key ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
+              <span
+                className={cn(
+                  'text-[10px] px-1.5 py-0.5 rounded-full font-bold',
+                  statusFilter === key ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                )}
+              >
                 {counts[key]}
               </span>
             </button>
@@ -254,72 +332,73 @@ export default function EnquiriesPage() {
 
         {/* Search */}
         <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search enquiries…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by customer or subject…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 text-sm"
+          />
         </div>
 
-        {/* Table */}
-        <Card className="border-0 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b bg-muted/30">
-                <tr>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Customer</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Subject</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">Type</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Replies</th>
-                  <th className="text-right py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filtered.map((enq) => {
-                  const { label, color, Icon } = STATUS_CONFIG[enq.status];
-                  return (
-                    <tr
-                      key={enq.id}
-                      onClick={() => setSelected(enq)}
-                      className="hover:bg-muted/20 transition-colors cursor-pointer"
-                    >
-                      <td className="py-3 px-4">
-                        <p className="font-medium">{enq.name}</p>
-                        <p className="text-xs text-muted-foreground">{enq.email}</p>
-                      </td>
-                      <td className="py-3 px-4">
-                        <p className="line-clamp-1 font-medium">{enq.subject}</p>
-                        {enq.productName && (
-                          <p className="text-xs text-muted-foreground line-clamp-1">{enq.productName}</p>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 hidden md:table-cell">
-                        <Badge variant="outline" className="text-[10px]">{TYPE_LABELS[enq.enquiryType]}</Badge>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={cn('inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full border', color)}>
-                          <Icon className="h-3 w-3" />{label}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 hidden lg:table-cell">
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <MessageSquare className="h-3.5 w-3.5" />{enq.replies.length}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <span className="text-xs text-muted-foreground">{fmtTime(enq.createdAt)}</span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {filtered.length === 0 && (
-              <div className="py-16 text-center">
-                <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">No enquiries found</p>
-              </div>
-            )}
+        {/* Loading state */}
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        </Card>
+        ) : filtered.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <MessageSquare className="h-10 w-10 text-muted-foreground/40 mb-3" />
+              <p className="font-semibold text-sm">No enquiries found</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Try clearing filters or search criteria</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-3">
+            {filtered.map((e) => {
+              const cfg = STATUS_CONFIG[e.status] || STATUS_CONFIG.open;
+              const StatusIcon = cfg.Icon;
+              return (
+                <Card
+                  key={e.id}
+                  onClick={() => setSelected(e)}
+                  className="hover:shadow-md transition-all cursor-pointer border hover:border-violet-300 dark:hover:border-violet-800"
+                >
+                  <CardContent className="p-4 flex items-center justify-between gap-4">
+                    <div className="flex items-start gap-3.5 min-w-0">
+                      <div className="h-9 w-9 rounded-xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 flex items-center justify-center text-sm font-semibold shrink-0 mt-0.5">
+                        {e.name.charAt(0)}
+                      </div>
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full border', cfg.color)}>
+                            {cfg.label}
+                          </span>
+                          <span className="text-xs text-muted-foreground font-medium uppercase">{e.enquiryType}</span>
+                          <span className="text-[10px] text-muted-foreground">• {fmtTime(e.createdAt)}</span>
+                        </div>
+                        <h3 className="font-semibold text-sm truncate">{e.subject}</h3>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{e.message}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      {e.replies.length > 0 && (
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                          {e.replies.length} {e.replies.length === 1 ? 'reply' : 'replies'}
+                        </span>
+                      )}
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                        <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     </>
   );

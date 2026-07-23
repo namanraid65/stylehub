@@ -1,6 +1,7 @@
 // Skeleton + Loading + Empty + Error state components for StyleHub web
 
 import React from 'react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ShoppingBag, Search, Wifi, RefreshCw, PackageX, AlertTriangle, HeartOff } from 'lucide-react';
 
@@ -111,13 +112,22 @@ export function EmptyState({ icon, title, message, action, className }: EmptySta
       <h3 className="font-display text-lg font-medium text-[var(--charcoal)] mb-2">{title}</h3>
       <p className="text-sm font-body text-[var(--muted)] max-w-xs leading-relaxed">{message}</p>
       {action && (
-        <a
-          href={action.href}
-          onClick={action.onClick}
-          className="mt-5 inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[var(--rose)] text-white text-sm font-body font-medium hover:bg-[var(--rose-dark)] transition-colors"
-        >
-          {action.label}
-        </a>
+        action.href ? (
+          <Link
+            href={action.href}
+            onClick={action.onClick}
+            className="mt-5 inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[var(--rose)] text-white text-sm font-body font-medium hover:bg-[var(--rose-dark)] transition-colors"
+          >
+            {action.label}
+          </Link>
+        ) : (
+          <button
+            onClick={action.onClick}
+            className="mt-5 inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[var(--rose)] text-white text-sm font-body font-medium hover:bg-[var(--rose-dark)] transition-colors"
+          >
+            {action.label}
+          </button>
+        )
       )}
     </div>
   );
@@ -129,7 +139,7 @@ export function EmptyProducts({ onClear }: { onClear?: () => void }) {
     <EmptyState
       icon={<Search className="h-7 w-7 text-[var(--muted)]" />}
       title="No products found"
-      message="Try adjusting your filters or search terms. We're always adding new styles!"
+      message="Try adjusting your filters or search terms. We&apos;re always adding new styles!"
       action={onClear ? { label: 'Clear Filters', onClick: onClear } : { label: 'Browse All', href: '/products' }}
     />
   );
@@ -192,14 +202,14 @@ export function NotFoundState({ entity = 'page' }: { entity?: string }) {
         {entity.charAt(0).toUpperCase() + entity.slice(1)} not found
       </h1>
       <p className="text-sm font-body text-[var(--muted)] max-w-sm">
-        The {entity} you're looking for may have moved or doesn't exist. Let's get you back on track.
+        The {entity} you&apos;re looking for may have moved or doesn&apos;t exist. Let&apos;s get you back on track.
       </p>
-      <a
+      <Link
         href="/"
         className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--rose)] text-white text-sm font-body font-medium hover:bg-[var(--rose-dark)] transition-colors"
       >
         <ShoppingBag className="h-4 w-4" /> Back to StyleHub
-      </a>
+      </Link>
     </div>
   );
 }
