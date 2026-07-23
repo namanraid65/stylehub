@@ -33,18 +33,13 @@
 ### 📧 3. Gmail & SMTP Email Invoicing ("Bill on Gmail")
 * **Automated Order Receipts:** Dispatches HTML order invoices directly to the customer's email address (*Gmail SMTP / Resend API*) upon checkout completion, complete with GST breakdown and downloadable PDF invoices.
 
-### 🏪 4. AI Fashion Writer & Vendor Enterprise Tools
-* **AI Fashion Description Generator (`AiDescriptionGeneratorModal.tsx`):** One-click **"Auto-Generate with AI"** magic button in the Vendor Product form to write catchy, high-converting product descriptions and highlights.
-* **Bulk CSV Product Importer (`BulkProductCsvModal.tsx`):** Drag-and-drop CSV batch upload modal for vendors with sample CSV template downloads.
-* **Vendor Settlement Ledger (`VendorPayoutsPage.tsx`):** Dedicated payout ledger tracking gross sales, platform commission deductions, and bank settlements.
-
-### 🔄 5. Automatic Cart & Wishlist Cloud Sync (`SyncObserver`)
+### 🔄 4. Automatic Cart & Wishlist Cloud Sync (`SyncObserver`)
 * **Cross-Device & Guest Sync:** Cart & wishlist items automatically persist across browser sessions using **Zustand** local storage and sync to MongoDB via `/api/cart/sync` and `/api/auth/wishlist/sync` upon login.
 
-### 🔍 6. Garment Image Magnification Lens (PDP Zoom)
+### 🔍 5. Garment Image Magnification Lens (PDP Zoom)
 * **High-Precision Magnifier:** Product Detail Pages (PDP) feature a cursor-following zoom lens enabling buyers to inspect fine fabric textures, stitching details, and print quality.
 
-### ⚠️ 7. Low Stock & Scarcity Urgency Badges
+### ⚠️ 6. Low Stock & Scarcity Urgency Badges
 * **Dynamic Indicators:** Real-time stock alerts (*e.g., "⚡ Only 2 left in stock!"*) on product pages and variant selectors to prevent overselling.
 
 ---
